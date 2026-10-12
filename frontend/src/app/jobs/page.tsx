@@ -32,6 +32,8 @@ interface Job {
   missingSkills: string[]
   description: string
   requirements: string[]
+  jobUrl?: string  // External job posting URL
+  companyWebsite?: string
 }
 
 export default function JobsPage() {
@@ -63,6 +65,8 @@ function JobsContent() {
       missingSkills: ['TypeScript', 'Docker'],
       description: 'Join our innovative team building next-generation web applications.',
       requirements: ['3+ years experience', 'Bachelor\'s degree or equivalent', 'Strong problem-solving skills'],
+      jobUrl: 'https://www.linkedin.com/jobs/view/full-stack-developer',
+      companyWebsite: 'https://techinnovations.com/careers',
     },
     {
       id: '2',
@@ -78,6 +82,8 @@ function JobsContent() {
       missingSkills: ['Kubernetes', 'Go'],
       description: 'Build scalable solutions for enterprise clients.',
       requirements: ['2+ years experience', 'Computer Science degree preferred', 'Team collaboration skills'],
+      jobUrl: 'https://www.indeed.com/jobs/software-engineer',
+      companyWebsite: 'https://digitalsolutions.com/jobs',
     },
     {
       id: '3',
@@ -93,6 +99,8 @@ function JobsContent() {
       missingSkills: ['R', 'Deep Learning', 'Big Data'],
       description: 'Transform data into actionable insights using advanced analytics.',
       requirements: ['Master\'s degree preferred', '3+ years ML experience', 'Statistical knowledge'],
+      jobUrl: 'https://www.glassdoor.com/job-listing/data-scientist',
+      companyWebsite: 'https://analyticspro.com/careers',
     },
   ]
 
@@ -210,7 +218,8 @@ function JobsContent() {
         {sampleJobs.map((job, index) => (
           <div
             key={job.id}
-            className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"
+            className="bg-white rounded-lg shadow-sm border border-gray-200 card-hover cursor-pointer"
+            onClick={() => job.jobUrl && window.open(job.jobUrl, '_blank')}
           >
             <div className="p-6">
               {/* Header */}
@@ -350,10 +359,20 @@ function JobsContent() {
 
               {/* Actions */}
               <div className="flex gap-3 pt-4 border-t border-gray-200">
-                <button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    job.jobUrl && window.open(job.jobUrl, '_blank');
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!job.jobUrl}
+                >
                   View Full Details
                 </button>
-                <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+                <button 
+                  onClick={(e) => e.stopPropagation()}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                >
                   Save for Later
                 </button>
               </div>
