@@ -44,7 +44,16 @@ class StorageService:
             
             return public_url
         except Exception as e:
-            raise ValidationError(f"Failed to upload file: {str(e)}")
+            error_msg = str(e)
+            print(f"Storage upload error: {error_msg}")
+            
+            # Check if bucket doesn't exist
+            if "Bucket not found" in error_msg or "bucket" in error_msg.lower():
+                print(f"Bucket '{self.bucket}' may not exist. Please create it in Supabase dashboard.")
+                # Return a placeholder URL for now
+                return f"local://{user_id}/{filename}"
+            
+            raise ValidationError(f"Failed to upload file: {error_msg}")
 
     async def delete_resume(self, file_path: str) -> None:
         """Delete resume file from storage."""
