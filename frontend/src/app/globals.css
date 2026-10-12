@@ -1,0 +1,194 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Manrope for display text and Inter for UI */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* ORVENA Light Theme - Warm ivory base with midnight ink accents */
+    --background: 45 43% 96%; /* Warm ivory #F7F5EF */
+    --foreground: 171 25% 13%; /* Midnight ink #142522 */
+    
+    --card: 0 0% 100%; /* Pure white for elevated surfaces */
+    --card-foreground: 171 25% 13%; /* Midnight ink */
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 171 25% 13%;
+    
+    /* Primary: Pathfinder teal - Navigation & progress */
+    --primary: 175 76% 32%; /* Pathfinder teal #168C83 */
+    --primary-foreground: 45 43% 96%; /* Warm ivory */
+    
+    /* Secondary: Midnight ink - Professional foundation */
+    --secondary: 171 25% 13%; /* Midnight ink #142522 */
+    --secondary-foreground: 45 43% 96%; /* Warm ivory */
+    
+    /* Muted backgrounds */
+    --muted: 45 28% 92%; /* Lighter warm ivory */
+    --muted-foreground: 171 14% 44%; /* Medium midnight */
+    
+    /* Accent: Pathfinder teal with lighter background */
+    --accent: 180 100% 94%; /* Very light pathfinder teal */
+    --accent-foreground: 175 76% 32%; /* Pathfinder teal */
+    
+    /* Destructive/Error */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 45 43% 96%;
+    
+    /* Borders & inputs */
+    --border: 171 11% 85%; /* Subtle midnight tint */
+    --input: 171 11% 85%;
+    --ring: 175 76% 32%; /* Pathfinder teal focus ring */
+    
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* ORVENA Dark Theme - Midnight ink base with pathfinder accents */
+    --background: 171 25% 13%; /* Midnight ink #142522 */
+    --foreground: 45 43% 96%; /* Warm ivory */
+    
+    --card: 171 22% 18%; /* Lighter midnight for cards */
+    --card-foreground: 45 43% 96%;
+    
+    --popover: 171 22% 18%;
+    --popover-foreground: 45 43% 96%;
+    
+    /* Primary remains pathfinder teal */
+    --primary: 175 76% 32%; /* Pathfinder teal */
+    --primary-foreground: 45 43% 96%; /* Warm ivory */
+    
+    /* Secondary: Lighter midnight */
+    --secondary: 171 22% 25%;
+    --secondary-foreground: 45 43% 96%;
+    
+    --muted: 171 22% 20%;
+    --muted-foreground: 171 11% 65%;
+    
+    --accent: 171 22% 22%;
+    --accent-foreground: 175 76% 32%; /* Pathfinder teal */
+    
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 45 43% 96%;
+    
+    --border: 171 22% 25%;
+    --input: 171 22% 25%;
+    --ring: 175 76% 40%; /* Slightly lighter pathfinder for dark mode */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Display typography uses Manrope */
+  h1, h2, h3, h4, h5, h6,
+  .font-display {
+    font-family: 'Manrope', system-ui, sans-serif;
+    font-weight: 700;
+  }
+
+  /* Smooth scrolling for pathfinder navigation */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* ORVENA Pathfinder visual effects */
+  .pathfinder-glow {
+    box-shadow: 0 0 20px rgba(22, 140, 131, 0.3);
+    transition: box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pathfinder-glow:hover {
+    box-shadow: 0 0 40px rgba(22, 140, 131, 0.5);
+  }
+
+  /* Premium glass effect for cards */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(20, 37, 34, 0.1);
+  }
+
+  .dark .glass-card {
+    background: rgba(20, 37, 34, 0.6);
+    border: 1px solid rgba(247, 245, 239, 0.1);
+  }
+
+  /* Pathfinder path visualization base styles */
+  .pathfinder-path {
+    stroke: theme('colors.pathfinder.500');
+    stroke-width: 2;
+    fill: none;
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: draw-path 2s ease-out forwards;
+  }
+
+  @keyframes draw-path {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /* Node states for pathfinder visualization */
+  .pathfinder-node {
+    transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .pathfinder-node.completed {
+    fill: theme('colors.pathfinder.500');
+  }
+
+  .pathfinder-node.active {
+    fill: theme('colors.pathfinder.400');
+    animation: pathfinder-glow 2s ease-in-out infinite;
+  }
+
+  .pathfinder-node.locked {
+    fill: theme('colors.midnight.300');
+    opacity: 0.5;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Premium gradient backgrounds */
+  .gradient-pathfinder {
+    background: linear-gradient(135deg, 
+      theme('colors.pathfinder.500') 0%, 
+      theme('colors.pathfinder.600') 100%);
+  }
+
+  .gradient-midnight {
+    background: linear-gradient(135deg, 
+      theme('colors.midnight.900') 0%, 
+      theme('colors.midnight.950') 100%);
+  }
+
+  /* Text gradients for hero elements */
+  .text-gradient-pathfinder {
+    background: linear-gradient(135deg, 
+      theme('colors.pathfinder.400') 0%, 
+      theme('colors.pathfinder.600') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ORVENA Auth Flow Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>ORVENA Auth & API Test</h1>
+    <div id="output"></div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        const output = document.getElementById('output');
+
+        function log(message, type = 'info') {
+            const p = document.createElement('p');
+            p.className = type;
+            p.textContent = message;
+            output.appendChild(p);
+        }
+
+        function logJSON(label, data) {
+            log(label, 'info');
+            const pre = document.createElement('pre');
+            pre.textContent = JSON.stringify(data, null, 2);
+            output.appendChild(pre);
+        }
+
+        async function testHealthCheck() {
+            log('Testing Backend Health Check...');
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                log('✓ Backend is reachable', 'success');
+                logJSON('Health Response:', data);
+            } catch (err) {
+                log(`✗ Backend unreachable: ${err.message}`, 'error');
+            }
+        }
+
+        async function testCareerEndpointWithoutAuth() {
+            log('Testing Career Discovery Endpoint (No Auth)...');
+            try {
+                const response = await fetch(`${API_URL}/api/v1/career/discovery/sessions/active`);
+                const data = await response.json();
+                
+                if (response.status === 401) {
+                    log('✓ Endpoint requires auth (expected)', 'success');
+                    logJSON('Auth Error Response:', data);
+                } else {
+                    log(`Unexpected status: ${response.status}`, 'error');
+                    logJSON('Response:', data);
+                }
+            } catch (err) {
+                log(`✗ Network error: ${err.message}`, 'error');
+                log('This means the browser cannot reach the backend!', 'error');
+            }
+        }
+
+        async function testResumeEndpointWithoutAuth() {
+            log('Testing Resume Endpoint (No Auth)...');
+            try {
+                const response = await fetch(`${API_URL}/api/v1/resumes`);
+                const data = await response.json();
+                
+                if (response.status === 401) {
+                    log('✓ Endpoint requires auth (expected)', 'success');
+                    logJSON('Auth Error Response:', data);
+                } else {
+                    log(`Unexpected status: ${response.status}`, 'error');
+                    logJSON('Response:', data);
+                }
+            } catch (err) {
+                log(`✗ Network error: ${err.message}`, 'error');
+                log('This means the browser cannot reach the backend!', 'error');
+            }
+        }
+
+        async function testCORS() {
+            log('Testing CORS Configuration...');
+            try {
+                const response = await fetch(`${API_URL}/health`, {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Origin': window.location.origin,
+                        'Access-Control-Request-Method': 'GET'
+                    }
+                });
+                
+                const corsHeaders = {
+                    'Access-Control-Allow-Origin': response.headers.get('Access-Control-Allow-Origin'),
+                    'Access-Control-Allow-Methods': response.headers.get('Access-Control-Allow-Methods'),
+                    'Access-Control-Allow-Headers': response.headers.get('Access-Control-Allow-Headers'),
+                };
+                
+                log('✓ CORS Headers:', 'success');
+                logJSON('CORS Configuration:', corsHeaders);
+            } catch (err) {
+                log(`✗ CORS test failed: ${err.message}`, 'error');
+            }
+        }
+
+        async function runAllTests() {
+            output.innerHTML = '';
+            log('Starting Diagnostic Tests...', 'info');
+            log('═══════════════════════════════════════════════════', 'info');
+            
+            await testHealthCheck();
+            log('───────────────────────────────────────────────────', 'info');
+            
+            await testCareerEndpointWithoutAuth();
+            log('───────────────────────────────────────────────────', 'info');
+            
+            await testResumeEndpointWithoutAuth();
+            log('───────────────────────────────────────────────────', 'info');
+            
+            await testCORS();
+            log('═══════════════════════════════════════════════════', 'info');
+            log('Tests Complete!', 'success');
+            
+            log('\nNEXT STEPS:', 'info');
+            log('1. If "Network error" appears, check if backend is running on port 8000');
+            log('2. If "401 Unauthorized" appears, authentication is working correctly');
+            log('3. Open browser DevTools (F12) → Network tab to see actual requests');
+        }
+
+        // Run tests on page load
+        window.onload = runAllTests;
+    </script>
+</body>
+</html>

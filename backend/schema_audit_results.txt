@@ -1,0 +1,48 @@
+
+======================================================================
+EducationRecord
+======================================================================
+Model fields: ['achievements', 'created_at', 'degree', 'end_date', 'field_of_study', 'gpa', 'gpa_scale', 'id', 'institution_name', 'is_current', 'relevant_coursework', 'start_date', 'student_profile_id', 'updated_at']
+Schema fields: ['created_at', 'degree', 'end_date', 'field_of_study', 'gpa', 'gpa_scale', 'id', 'institution_name', 'is_current', 'start_date', 'student_profile_id', 'updated_at']
+
+OK - no extra fields
+
+======================================================================
+StudentSkill
+======================================================================
+Model fields: ['created_at', 'evidence_description', 'evidence_type', 'id', 'is_verified', 'last_used_date', 'proficiency_level', 'skill_id', 'student_profile_id', 'updated_at', 'years_of_experience']
+Schema fields: ['created_at', 'evidence_description', 'evidence_type', 'id', 'is_verified', 'last_used_date', 'proficiency_level', 'skill_id', 'student_profile_id', 'updated_at', 'years_of_experience']
+
+OK - no extra fields
+
+======================================================================
+Project
+======================================================================
+Model fields: ['achievements', 'created_at', 'demo_url', 'description', 'end_date', 'github_url', 'id', 'impact_metrics', 'is_current', 'role', 'start_date', 'student_profile_id', 'team_size', 'technologies', 'title', 'updated_at', 'visibility']
+Schema fields: ['created_at', 'demo_url', 'description', 'end_date', 'github_url', 'id', 'is_current', 'role', 'start_date', 'student_profile_id', 'team_size', 'technologies', 'title', 'updated_at']
+
+OK - no extra fields
+
+======================================================================
+Certification
+======================================================================
+Model fields: ['created_at', 'credential_id', 'credential_url', 'expiry_date', 'id', 'issue_date', 'issuing_organization', 'name', 'skills_covered', 'student_profile_id', 'updated_at']
+Schema fields: ['created_at', 'credential_id', 'credential_url', 'expiry_date', 'id', 'issue_date', 'issuing_organization', 'name', 'skills_covered', 'student_profile_id', 'updated_at']
+
+OK - no extra fields
+
+======================================================================
+CareerGoal
+======================================================================
+Model fields: ['career_role_id', 'created_at', 'description', 'id', 'is_primary', 'priority', 'status', 'student_profile_id', 'target_timeline', 'title', 'updated_at']
+Schema fields: ['career_role_id', 'created_at', 'description', 'id', 'is_primary', 'priority', 'status', 'student_profile_id', 'target_timeline', 'title', 'updated_at']
+
+OK - no extra fields
+
+======================================================================
+CareerRoadmap
+======================================================================
+Model fields: ['career_goal_id', 'created_at', 'description', 'id', 'progress_percentage', 'recommendation_id', 'status', 'student_profile_id', 'target_duration_weeks', 'title', 'updated_at']
+Schema fields: ['career_goal_id', 'created_at', 'description', 'id', 'progress_percentage', 'recommendation_id', 'status', 'student_profile_id', 'target_duration_weeks', 'title', 'updated_at']
+
+OK - no extra fields

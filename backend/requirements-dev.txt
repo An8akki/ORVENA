@@ -1,0 +1,13 @@
+-r requirements.txt
+
+# Development Tools
+ipython==8.20.0
+ipdb==0.13.13
+
+# Type Checking
+mypy==1.8.0
+types-python-dateutil==2.8.19.20240106
+
+# Testing
+pytest-watch==4.2.0
+pytest-html==4.1.1
