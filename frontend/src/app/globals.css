@@ -128,6 +128,28 @@
     border: 1px solid rgba(247, 245, 239, 0.1);
   }
 
+  /* Card hover effects - floating/lift animation */
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1),
+                0 10px 16px -5px rgba(22, 140, 131, 0.15);
+  }
+
+  /* Subtle hover for non-clickable cards */
+  .card-hover-subtle {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .card-hover-subtle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.08);
+  }
+
   /* Pathfinder path visualization base styles */
   .pathfinder-path {
     stroke: theme('colors.pathfinder.500');

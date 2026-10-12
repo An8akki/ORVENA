@@ -2,7 +2,9 @@
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { api } from '@/lib/api-client'
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import {
   User,
   Briefcase,
@@ -67,8 +69,98 @@ interface Certification {
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'experience' | 'education' | 'skills' | 'certifications'>('overview')
   const [isEditing, setIsEditing] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [profileData, setProfileData] = useState<any>(null)
 
-  // Sample profile data
+  // Fetch real profile data from backend
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        setLoading(true)
+        const response = await api.get<any>('/api/v1/students/profile/complete')
+        setProfileData(response)
+        
+        // Set profile state from API response
+        if (response.profile) {
+          setProfile({
+            firstName: response.profile.full_name?.split(' ')[0] || 'User',
+            lastName: response.profile.full_name?.split(' ').slice(1).join(' ') || '',
+            headline: response.profile.bio || 'Professional',
+            location: response.profile.location || '',
+            email: response.profile.email || '',
+            phone: response.profile.phone || '',
+            linkedin: response.profile.linkedin_url || '',
+            github: response.profile.github_url || '',
+            website: response.profile.portfolio_url || '',
+            bio: response.profile.bio || '',
+            careerGoals: 'Building my career path',
+            targetSalary: response.profile.expected_salary_min && response.profile.expected_salary_max 
+              ? `$${response.profile.expected_salary_min.toLocaleString()} - $${response.profile.expected_salary_max.toLocaleString()}`
+              : '',
+          })
+        }
+
+        // Set education from API
+        if (response.education && response.education.length > 0) {
+          setEducation(response.education.map((edu: any) => ({
+            id: edu.id,
+            institution: edu.institution_name,
+            degree: edu.degree,
+            field: edu.field_of_study,
+            startDate: edu.start_date,
+            endDate: edu.end_date || 'Present',
+            gpa: edu.gpa?.toString() || '',
+            achievements: edu.achievements || [],
+          })))
+        }
+
+        // Set skills from API
+        if (response.skills && response.skills.length > 0) {
+          setSkills(response.skills.map((skill: any) => ({
+            id: skill.id,
+            name: skill.skill?.name || 'Skill',
+            level: skill.proficiency_level as any,
+            category: skill.skill?.category || 'Technical',
+          })))
+        }
+
+        // Set projects as experience (since we don't have work experience in the model)
+        if (response.projects && response.projects.length > 0) {
+          setExperience(response.projects.map((project: any) => ({
+            id: project.id,
+            company: 'Personal Project',
+            position: project.role || 'Developer',
+            location: '',
+            startDate: project.start_date || '',
+            endDate: project.end_date || '',
+            current: project.is_current || false,
+            description: project.description,
+            achievements: project.achievements || [],
+          })))
+        }
+
+        // Set certifications from API
+        if (response.certifications && response.certifications.length > 0) {
+          setCertifications(response.certifications.map((cert: any) => ({
+            id: cert.id,
+            name: cert.name,
+            issuer: cert.issuing_organization,
+            date: cert.issue_date,
+            expiryDate: cert.expiry_date,
+            credentialId: cert.credential_id,
+          })))
+        }
+      } catch (error) {
+        console.error('Failed to fetch profile:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [])
+
+  // Sample profile data - will be overwritten by API data
   const [profile, setProfile] = useState({
     firstName: 'Alex',
     lastName: 'Johnson',
@@ -174,6 +266,11 @@ export default function ProfilePage() {
   return (
     <AuthGuard>
       <AppLayout>
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <LoadingSpinner size="lg" />
+          </div>
+        ) : (
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -594,7 +691,7 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-        </div>
+        )}
       </AppLayout>
     </AuthGuard>
   )

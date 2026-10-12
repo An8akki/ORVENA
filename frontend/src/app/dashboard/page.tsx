@@ -25,9 +25,9 @@ function DashboardContent() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
           {/* Career Discovery Card */}
           <Link href="/career/discovery">
-            <Card className="glass-card hover:shadow-lg transition-all duration-200 cursor-pointer group h-full border-midnight-200">
+            <Card className="glass-card card-hover h-full border-midnight-200">
               <CardHeader>
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-pathfinder-500/10 mb-3 group-hover:bg-pathfinder-500/20 transition-colors">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-pathfinder-500/10 mb-3 transition-colors">
                   <Target className="h-7 w-7 text-pathfinder-600" strokeWidth={2} />
                 </div>
                 <CardTitle className="text-lg font-display text-midnight-950">
@@ -51,9 +51,9 @@ function DashboardContent() {
 
           {/* Resume Analyzer Card */}
           <Link href="/resume">
-            <Card className="glass-card hover:shadow-lg transition-all duration-200 cursor-pointer group h-full border-midnight-200">
+            <Card className="glass-card card-hover h-full border-midnight-200">
               <CardHeader>
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-pathfinder-500/10 mb-3 group-hover:bg-pathfinder-500/20 transition-colors">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-pathfinder-500/10 mb-3 transition-colors">
                   <FileText className="h-7 w-7 text-pathfinder-600" strokeWidth={2} />
                 </div>
                 <CardTitle className="text-lg font-display text-midnight-950">
@@ -77,9 +77,9 @@ function DashboardContent() {
 
           {/* Job Recommender Card */}
           <Link href="/jobs">
-            <Card className="glass-card hover:shadow-lg transition-all duration-200 cursor-pointer group h-full border-midnight-200">
+            <Card className="glass-card card-hover h-full border-midnight-200">
               <CardHeader>
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-pathfinder-500/10 mb-3 group-hover:bg-pathfinder-500/20 transition-colors">
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-pathfinder-500/10 mb-3 transition-colors">
                   <Briefcase className="h-7 w-7 text-pathfinder-600" strokeWidth={2} />
                 </div>
                 <CardTitle className="text-lg font-display text-midnight-950">
