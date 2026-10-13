@@ -270,8 +270,6 @@ Create 6-10 milestones spanning the target timeline."""
                 .options(selectinload(CareerDiscoverySession.responses))
             )
             session = session_result.scalar_one_or_none()
-            if session and session.analysis_data:
-                preferences = session.analysis_data.get("preferences", {})
             if session and session.responses:
                 answers = " ".join(response.response_text for response in session.responses)
                 from app.services.career_signals import infer_preferred_roles

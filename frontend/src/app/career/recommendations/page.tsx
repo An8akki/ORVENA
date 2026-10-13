@@ -92,7 +92,18 @@ function RecommendationsContent() {
         }
       } catch (refreshError) {
         console.error('Could not refresh recommendations from saved discovery answers:', refreshError)
-        setError(refreshError instanceof Error ? refreshError.message : 'Could not generate recommendations from your saved discovery answers.')
+        // The session-list endpoint can fail independently of generation.
+        // The backend generation route selects the latest answered session
+        // itself, so try that route without requiring the list response.
+        try {
+          const generated = await generateRecommendations()
+          setRecommendations(generated)
+          if (generated.length === 0) {
+            setError('Your discovery answers are saved, but no recommendations were produced. Please try again.')
+          }
+        } catch (generationError) {
+          setError(generationError instanceof Error ? generationError.message : 'Could not generate recommendations from your saved answers.')
+        }
       } finally {
         setGenerating(false)
       }

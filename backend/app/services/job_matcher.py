@@ -220,29 +220,31 @@ class JobMatcher:
                 preferences
             )
             
-            if score >= 0.3:  # Minimum threshold
-                match = {
-                    "role_name": job["role_name"],
-                    "category": job["category"],
-                    "description": job["description"],
-                    "fit_score": round(score, 2),
-                    "match_percentage": round(score * 100),
-                    "salary_range_min": job["salary_min"],
-                    "salary_range_max": job["salary_max"],
-                    "salary_currency": "USD",
-                    "salary_period": "annual",
-                    "growth_rate": job["growth_rate"],
-                    "market_demand": job["demand"],
-                    "industry_trend": job["industry_trend"],
-                    "matched_skills": details["matched_skills"],
-                    "missing_skills": details["missing_skills"],
-                    "strengths": details["strengths"],
-                    "gaps": details["gaps"],
-                    "opportunities": details["opportunities"],
-                    "threats": details["threats"],
-                    "reasoning": self._generate_reasoning(job, score, details)
-                }
-                matches.append(match)
+            # Keep the best-fit roles even when the profile has sparse data.
+            # The offline recommender must still return useful starting points
+            # when no LLM is configured or the student is early in discovery.
+            match = {
+                "role_name": job["role_name"],
+                "category": job["category"],
+                "description": job["description"],
+                "fit_score": round(score, 2),
+                "match_percentage": round(score * 100),
+                "salary_range_min": job["salary_min"],
+                "salary_range_max": job["salary_max"],
+                "salary_currency": "USD",
+                "salary_period": "annual",
+                "growth_rate": job["growth_rate"],
+                "market_demand": job["demand"],
+                "industry_trend": job["industry_trend"],
+                "matched_skills": details["matched_skills"],
+                "missing_skills": details["missing_skills"],
+                "strengths": details["strengths"],
+                "gaps": details["gaps"],
+                "opportunities": details["opportunities"],
+                "threats": details["threats"],
+                "reasoning": self._generate_reasoning(job, score, details)
+            }
+            matches.append(match)
         
         # Sort by score descending
         matches.sort(key=lambda x: x["fit_score"], reverse=True)
