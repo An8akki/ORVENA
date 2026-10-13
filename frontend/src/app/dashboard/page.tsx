@@ -103,9 +103,9 @@ function DashboardContent() {
         </div>
 
         {/* Two-column layout for additional content */}
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-6">
           {/* Profile Completion */}
-          <Card className="glass-card border-midnight-200 lg:col-span-2">
+          <Card className="glass-card border-midnight-200">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-pathfinder-600" />
@@ -155,42 +155,6 @@ function DashboardContent() {
             </CardContent>
           </Card>
 
-          {/* Quick Stats */}
-          <Card className="glass-card border-midnight-200">
-            <CardHeader>
-              <CardTitle className="font-display text-midnight-950">Your Progress</CardTitle>
-              <CardDescription className="text-midnight-600">
-                Career development overview
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-3xl font-display font-bold text-midnight-950">0</span>
-                    <span className="text-sm text-midnight-600">skills assessed</span>
-                  </div>
-                  <div className="h-1 bg-midnight-200 rounded-full" />
-                </div>
-                
-                <div>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-3xl font-display font-bold text-midnight-950">0</span>
-                    <span className="text-sm text-midnight-600">career paths explored</span>
-                  </div>
-                  <div className="h-1 bg-midnight-200 rounded-full" />
-                </div>
-
-                <div>
-                  <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-3xl font-display font-bold text-midnight-950">0</span>
-                    <span className="text-sm text-midnight-600">milestones achieved</span>
-                  </div>
-                  <div className="h-1 bg-midnight-200 rounded-full" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </AppLayout>
