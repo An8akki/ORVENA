@@ -50,6 +50,7 @@ function CareerDiscoveryContent() {
   const [session, setSession] = useState<CareerDiscoverySession | null>(null)
   const [currentQuestion, setCurrentQuestion] = useState<NextQuestionResponse | null>(null)
   const [answer, setAnswer] = useState('')
+  const [selectedOption, setSelectedOption] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isComplete, setIsComplete] = useState(false)
   const initializationRef = useRef<Promise<void> | null>(null)
@@ -125,7 +126,11 @@ function CareerDiscoveryContent() {
   }
 
   async function handleSubmitAnswer() {
-    if (!session || !currentQuestion || !answer.trim()) return
+    if (!session || !currentQuestion || (!answer.trim() && !selectedOption)) return
+
+    const responseText = selectedOption && currentQuestion.options
+      ? `${selectedOption}) ${currentQuestion.options[selectedOption]}${answer.trim() ? ` — ${answer.trim()}` : ''}`
+      : answer.trim()
 
     try {
       setProcessing(true)
@@ -136,11 +141,12 @@ function CareerDiscoveryContent() {
         session_id: session.id,
         question_number: currentQuestion.question_number,
         question_text: currentQuestion.question_text,
-        response_text: answer.trim(),
+        response_text: responseText,
       })
 
       // Clear answer
       setAnswer('')
+      setSelectedOption(null)
 
       // Update local session with new response count
       const newResponsesCount = (session.responses?.length || 0) + 1
@@ -162,7 +168,7 @@ function CareerDiscoveryContent() {
             session_id: session.id,
             sequence_number: currentQuestion.question_number,
             question_text: currentQuestion.question_text,
-            response_text: answer.trim(),
+            response_text: responseText,
             question_category: null,
             phase: null,
             created_at: new Date().toISOString()
@@ -468,23 +474,44 @@ function CareerDiscoveryContent() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
+                    {currentQuestion.options && Object.keys(currentQuestion.options).length > 0 && (
+                      <div className="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Choose an answer">
+                        {Object.entries(currentQuestion.options).map(([key, option]) => {
+                          const selected = selectedOption === key
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              role="radio"
+                              aria-checked={selected}
+                              disabled={processing}
+                              onClick={() => setSelectedOption(key)}
+                              className={`flex min-h-16 items-start gap-3 rounded-xl border p-4 text-left transition-colors ${selected ? 'border-pathfinder-600 bg-pathfinder-50 ring-2 ring-pathfinder-200' : 'border-midnight-200 bg-white hover:border-pathfinder-400 hover:bg-pathfinder-50/50'}`}
+                            >
+                              <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${selected ? 'bg-pathfinder-600 text-white' : 'bg-midnight-100 text-midnight-700'}`}>{key}</span>
+                              <span className="pt-0.5 text-sm leading-6 text-midnight-900">{option}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
                     <Textarea
-                      placeholder="Share your thoughts here... Be specific and authentic."
+                      placeholder={currentQuestion.options ? 'Add context (optional)…' : 'Share your thoughts here... Be specific and authentic.'}
                       value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
-                      rows={8}
-                      className="resize-none bg-white border-midnight-200 focus:border-pathfinder-500 focus:ring-pathfinder-500 text-base"
+                      rows={currentQuestion.options ? 3 : 8}
+                      className="resize-y bg-white border-midnight-200 focus:border-pathfinder-500 focus:ring-pathfinder-500 text-base"
                       disabled={processing}
                     />
                     
                     <div className="flex justify-between items-center pt-2">
                       <p className="text-sm text-midnight-600">
-                        {answer.length} {answer.length === 1 ? 'character' : 'characters'}
+                        {(answer.length + (selectedOption ? currentQuestion.options?.[selectedOption].length ?? 0 : 0))} characters
                       </p>
                       
                       <Button
                         onClick={handleSubmitAnswer}
-                        disabled={!answer.trim() || processing}
+                        disabled={(!answer.trim() && !selectedOption) || processing}
                         className="bg-pathfinder-500 hover:bg-pathfinder-600 text-ivory-50 h-11 px-6 group"
                       >
                         {processing ? (

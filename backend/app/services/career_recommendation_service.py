@@ -215,6 +215,16 @@ Create 6-10 milestones spanning the target timeline."""
             .order_by(EducationRecord.start_date.desc())
         )
         education = list(education_result.scalars().all())
+        education_data = [
+            {
+                "institution": e.institution_name,
+                "degree": e.degree,
+                "field": e.field_of_study,
+                "start_date": str(e.start_date) if e.start_date else "",
+                "end_date": str(e.end_date) if e.end_date else ""
+            }
+            for e in education
+        ]
 
         # Get skills
         skills_result = await db.execute(
@@ -250,16 +260,6 @@ Create 6-10 milestones spanning the target timeline."""
                 education_data = [item for item in resume_extraction.education if isinstance(item, dict)]
         from app.services.career_signals import extract_skill_evidence
         skill_names = extract_skill_evidence(resume_text, skill_names)
-        education_data = [
-            {
-                "institution": e.institution_name,
-                "degree": e.degree,
-                "field": e.field_of_study,
-                "start_date": str(e.start_date) if e.start_date else "",
-                "end_date": str(e.end_date) if e.end_date else ""
-            }
-            for e in education
-        ]
         
         # Get discovery session preferences
         preferences = {}
