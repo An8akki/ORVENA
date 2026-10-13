@@ -12,7 +12,6 @@ import {
   Menu,
   Search,
   Bell,
-  User,
   Settings,
   LogOut,
   Moon,
@@ -132,10 +131,6 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push('/profile')}>
-                <User className="w-4 h-4 mr-2" />
-                Profile
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => router.push('/settings')}>
                 <Settings className="w-4 h-4 mr-2" />
                 Settings

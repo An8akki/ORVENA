@@ -147,9 +147,9 @@ export default function HomePage() {
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
               2
             </div>
-            <h3 className="text-xl font-semibold">Build Your Profile</h3>
+            <h3 className="text-xl font-semibold">Strengthen Your Resume</h3>
             <p className="text-muted-foreground">
-              Create an optimized resume and profile that highlights your unique qualifications
+              Create an optimized resume that highlights your unique qualifications
             </p>
           </div>
 

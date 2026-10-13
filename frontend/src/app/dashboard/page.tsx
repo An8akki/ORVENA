@@ -4,7 +4,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Target, FileText, Briefcase, TrendingUp, User, ArrowRight, Sparkles } from 'lucide-react'
+import { Target, FileText, Briefcase, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 function DashboardContent() {
@@ -102,60 +102,6 @@ function DashboardContent() {
           </Link>
         </div>
 
-        {/* Two-column layout for additional content */}
-        <div className="grid gap-6">
-          {/* Profile Completion */}
-          <Card className="glass-card border-midnight-200">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-pathfinder-600" />
-                <CardTitle className="font-display text-midnight-950">
-                  Complete Your Profile
-                </CardTitle>
-              </div>
-              <CardDescription className="text-midnight-600">
-                Help us provide better recommendations by completing your profile
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Progress bar */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-midnight-700">Profile completion</span>
-                    <span className="text-sm font-semibold text-pathfinder-600">40%</span>
-                  </div>
-                  <div className="w-full h-2 bg-midnight-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-pathfinder-500 rounded-full" style={{ width: '40%' }} />
-                  </div>
-                </div>
-
-                {/* Action items */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-ivory-100 dark:bg-midnight-900">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-pathfinder-500/20 flex items-center justify-center">
-                        <User className="w-4 h-4 text-pathfinder-600" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm text-midnight-900">Basic Information</p>
-                        <p className="text-xs text-midnight-600">
-                          Add your education and work experience
-                        </p>
-                      </div>
-                    </div>
-                    <Link href="/profile">
-                      <Button variant="outline" size="sm" className="border-pathfinder-500 text-pathfinder-600 hover:bg-pathfinder-50">
-                        Complete
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-        </div>
       </div>
     </AppLayout>
   )

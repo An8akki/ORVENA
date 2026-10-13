@@ -79,7 +79,7 @@ function JobsContent() {
         </div>
         <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
           <Sparkles className="w-5 h-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-700">Profile + Answer Matching</span>
+              <span className="text-sm font-medium text-blue-700">Career Answer Matching</span>
         </div>
       </div>
 
@@ -358,12 +358,9 @@ function JobsContent() {
           Want a Stronger Match?
         </h3>
         <p className="text-gray-600 mb-4">
-          Add skills and project evidence to your profile. These local matches update from your saved answers and resume.
+          Add skills and project evidence by updating your resume. These local matches use your saved answers and resume.
         </p>
         <div className="flex gap-3 justify-center">
-          <button onClick={() => { window.location.href = '/profile' }} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-            Complete Profile
-          </button>
           <button onClick={() => { window.location.href = '/resume' }} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
             Upload Resume
           </button>

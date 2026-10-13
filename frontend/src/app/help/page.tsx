@@ -110,12 +110,6 @@ export default function HelpPage() {
       category: 'account',
     },
     {
-      id: '10',
-      question: 'How do I update my profile?',
-      answer: 'Navigate to the Profile page and click the "Edit Profile" button. You can update your education, work experience, skills, certifications, and career goals. Changes are saved immediately and will be reflected in all recommendations.',
-      category: 'account',
-    },
-    {
       id: '11',
       question: 'What if a feature isn\'t working?',
       answer: 'First, try refreshing the page. If the issue persists, check your internet connection. All features have fallback mechanisms, so you should always receive results even if AI is temporarily unavailable. If you continue experiencing issues, contact support using the form below.',
@@ -133,7 +127,7 @@ export default function HelpPage() {
     {
       id: '1',
       title: 'Getting Started with ORVENA',
-      description: 'Learn the basics of navigating ORVENA and setting up your profile',
+      description: 'Learn the basics of navigating ORVENA and using its career tools',
       icon: Sparkles,
       duration: '5 min',
       link: '#getting-started',

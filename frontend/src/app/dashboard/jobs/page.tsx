@@ -36,17 +36,12 @@ function JobsContent() {
             <Briefcase className="h-16 w-16 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Job Matching Feature</h3>
             <p className="text-muted-foreground mb-6 max-w-md">
-              We're working on bringing you personalized job recommendations based on your profile,
-              skills, and career goals.
+              We're working on bringing you personalized job recommendations based on your career interests
+              and skills.
             </p>
-            <div className="flex gap-4">
-              <Button asChild variant="outline">
-                <a href="/profile">Complete Your Profile</a>
-              </Button>
-              <Button asChild>
-                <a href="/career/discovery">Start Career Discovery</a>
-              </Button>
-            </div>
+            <Button asChild>
+              <a href="/career/discovery">Start Career Discovery</a>
+            </Button>
           </div>
         </CardContent>
       </Card>

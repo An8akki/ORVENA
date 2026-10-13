@@ -168,14 +168,6 @@ function CareerResultsContent() {
             </Button>
             
             <Button
-              variant="outline"
-              onClick={() => router.push('/profile')}
-              className="w-full"
-            >
-              Complete Your Profile
-            </Button>
-
-            <Button
               variant="ghost"
               onClick={() => router.push('/dashboard')}
               className="w-full"
@@ -187,8 +179,7 @@ function CareerResultsContent() {
           <div className="mt-6 p-4 bg-white/50 rounded-lg">
             <p className="text-sm text-muted-foreground">
               💡 <strong>Pro Tip:</strong> The more complete your profile, the better
-              career recommendations we can provide. Consider adding your skills,
-              projects, and education before viewing recommendations.
+              career recommendations we can provide. Add skills, projects, and education through your resume.
             </p>
           </div>
         </CardContent>

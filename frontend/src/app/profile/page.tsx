@@ -3,6 +3,7 @@
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { useState, useEffect } from 'react'
+import { redirect } from 'next/navigation'
 import { api } from '@/lib/api-client'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import {
@@ -67,6 +68,7 @@ interface Certification {
 }
 
 export default function ProfilePage() {
+  redirect('/dashboard')
   const [activeTab, setActiveTab] = useState<'overview' | 'experience' | 'education' | 'skills' | 'certifications'>('overview')
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
