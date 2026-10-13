@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress'
 import {
   getRecommendations,
   generateRecommendations,
-  getActiveDiscoverySession,
+  getDiscoverySessions,
   createRoadmap,
   type CareerRecommendation,
 } from '@/lib/api/career'
@@ -55,15 +55,18 @@ function RecommendationsContent() {
       const data = await getRecommendations()
       setRecommendations(data)
 
-      // Refresh an earlier recommendation set when this account has saved
-      // newer answers. The server also chooses the latest session by default.
+      // Completed sessions are no longer returned by the active-session
+      // endpoint. Find the newest saved session with answers so completing
+      // discovery can generate recommendations on the first visit here.
       try {
-        const session = await getActiveDiscoverySession()
+        const sessions = await getDiscoverySessions()
+        const session = sessions
+          .filter((item) => (item.responses?.length || 0) > 0)
+          .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at))[0]
         const newestRecommendation = [...data].sort(
           (a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)
         )[0]
-        const hasAnswers = (session.responses?.length || 0) > 0
-        const recommendationsAreStale = hasAnswers && (
+        const recommendationsAreStale = session && (
           !newestRecommendation ||
           newestRecommendation.session_id !== session.id ||
           Date.parse(session.updated_at) > Date.parse(newestRecommendation.updated_at)
@@ -72,9 +75,13 @@ function RecommendationsContent() {
           setGenerating(true)
           const refreshed = await generateRecommendations(session.id)
           setRecommendations(refreshed)
+          if (refreshed.length === 0) {
+            setError('We found your saved discovery answers but could not create recommendations. Please try Generate Recommendations again.')
+          }
         }
       } catch (refreshError) {
         console.error('Could not refresh recommendations from saved discovery answers:', refreshError)
+        setError(refreshError instanceof Error ? refreshError.message : 'Could not generate recommendations from your saved discovery answers.')
       } finally {
         setGenerating(false)
       }
