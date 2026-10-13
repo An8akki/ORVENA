@@ -52,7 +52,16 @@ function RecommendationsContent() {
     try {
       setLoading(true)
       setError(null)
-      const data = await getRecommendations()
+      let data: CareerRecommendation[] = []
+      let recommendationsLoadError: unknown = null
+      try {
+        data = await getRecommendations()
+      } catch (loadError) {
+        // A failure to list existing records must not prevent generation from
+        // the student's saved discovery answers below.
+        recommendationsLoadError = loadError
+        console.error('Could not load existing career recommendations:', loadError)
+      }
       setRecommendations(data)
 
       // Completed sessions are no longer returned by the active-session
@@ -78,6 +87,8 @@ function RecommendationsContent() {
           if (refreshed.length === 0) {
             setError('We found your saved discovery answers but could not create recommendations. Please try Generate Recommendations again.')
           }
+        } else if (recommendationsLoadError && !session) {
+          setError(recommendationsLoadError instanceof Error ? recommendationsLoadError.message : 'Could not load recommendations.')
         }
       } catch (refreshError) {
         console.error('Could not refresh recommendations from saved discovery answers:', refreshError)
