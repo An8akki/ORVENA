@@ -501,6 +501,10 @@ Current conversation context will be provided. Generate the next question to con
         result = await db.execute(
             select(CareerDiscoverySession)
             .where(CareerDiscoverySession.student_profile_id == profile_id)
+            # The response schema includes each session's answers. Load this
+            # relationship in the async query instead of triggering lazy IO
+            # during Pydantic serialization (which raises MissingGreenlet).
+            .options(selectinload(CareerDiscoverySession.responses))
             .order_by(CareerDiscoverySession.created_at.desc())
         )
         return list(result.scalars().all())
