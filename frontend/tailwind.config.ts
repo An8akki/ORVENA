@@ -69,11 +69,11 @@ const config: Config = {
       
       // Typography
       fontFamily: {
-        display: designTokens.typography.fontFamily.display,
-        sans: designTokens.typography.fontFamily.sans,
-        mono: designTokens.typography.fontFamily.mono,
+        display: [...designTokens.typography.fontFamily.display],
+        sans: [...designTokens.typography.fontFamily.sans],
+        mono: [...designTokens.typography.fontFamily.mono],
       },
-      fontSize: designTokens.typography.fontSize,
+      fontSize: JSON.parse(JSON.stringify(designTokens.typography.fontSize)),
       fontWeight: designTokens.typography.fontWeight,
       
       // Spacing (using defaults, keeping for consistency)

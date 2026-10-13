@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { AppLayout } from '@/components/layout/AppLayout'
@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import PathfinderVisual from '@/components/brand/PathfinderVisual'
 import {
   createDiscoverySession,
+  getDiscoverySessions,
   getActiveDiscoverySession,
   getNextQuestion,
   submitAnswer,
@@ -19,6 +20,7 @@ import {
   type CareerDiscoverySession,
   type NextQuestionResponse,
 } from '@/lib/api/career'
+import { APIError } from '@/lib/api-client'
 import { 
   Target, 
   MessageCircle, 
@@ -50,11 +52,16 @@ function CareerDiscoveryContent() {
   const [answer, setAnswer] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isComplete, setIsComplete] = useState(false)
+  const initializationRef = useRef<Promise<void> | null>(null)
 
   const MAX_QUESTIONS = 10 // Configurable max questions
 
   useEffect(() => {
-    initializeSession()
+    // Next.js development mode replays effects. Share one initialization so
+    // two concurrent requests cannot create/replace each other's session.
+    if (!initializationRef.current) {
+      initializationRef.current = initializeSession()
+    }
   }, [])
 
   async function initializeSession() {
@@ -77,8 +84,16 @@ function CareerDiscoveryContent() {
         } else {
           setIsComplete(true)
         }
-      } catch {
-        // No active session, create new one
+      } catch (err) {
+        // Only create a session when the API confirms there is no active one.
+        // Auth/network/server failures must never discard the user's progress.
+        if (!(err instanceof APIError) || err.status !== 404) throw err
+        const previousSessions = await getDiscoverySessions()
+        const completedSession = previousSessions.find((item) => item.status === 'completed')
+        if (completedSession) {
+          router.replace(`/career/results/${completedSession.id}`)
+          return
+        }
         const newSession = await createDiscoverySession('initial')
         setSession(newSession)
         

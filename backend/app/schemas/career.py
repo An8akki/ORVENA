@@ -194,6 +194,7 @@ class CareerRecommendationResponse(CareerRecommendationBase):
     market_growth: Optional[str] = None
     
     created_at: datetime
+    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -223,16 +224,17 @@ class RoadmapMilestoneResponse(RoadmapMilestoneBase):
 
 class CareerRoadmapBase(BaseModel):
     """Base career roadmap schema."""
-    title: str = Field(..., min_length=1, max_length=200)
+    title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = None
-    target_duration_weeks: int = Field(..., ge=1, le=104)
+    target_duration_weeks: Optional[int] = Field(None, ge=1, le=104)
 
 
 class CareerRoadmapCreate(BaseModel):
     """Schema for creating career roadmap."""
-    career_goal_id: UUID
+    career_goal_id: Optional[UUID] = None
+    career_role_id: Optional[UUID] = None
     recommendation_id: Optional[UUID] = None
-    title: str = Field(..., min_length=1, max_length=255)
+    title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     target_duration_weeks: int = Field(default=12, ge=1, le=104)
 
@@ -245,6 +247,7 @@ class CareerRoadmapResponse(CareerRoadmapBase):
     recommendation_id: Optional[UUID] = None
     status: str
     progress_percentage: int
+    milestones: List[RoadmapMilestoneResponse] = []
     created_at: datetime
     updated_at: datetime
 

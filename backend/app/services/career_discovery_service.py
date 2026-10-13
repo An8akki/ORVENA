@@ -426,17 +426,48 @@ Current conversation context will be provided. Generate the next question to con
     async def create_session(
         self, db: AsyncSession, profile_id: UUID, session_data: CareerDiscoverySessionCreate
     ) -> CareerDiscoverySession:
-        """Create a new career discovery session."""
-        # Archive any existing in_progress sessions for this student profile
+        """Create a session only when the student has no resumable session."""
+        # Serialize creation per profile. This also protects against duplicate
+        # initialization calls from browser development-mode effect replay.
+        await db.execute(
+            select(StudentProfile.id)
+            .where(StudentProfile.id == profile_id)
+            .with_for_update()
+        )
         existing_result = await db.execute(
             select(CareerDiscoverySession).where(
                 CareerDiscoverySession.student_profile_id == profile_id,
                 CareerDiscoverySession.status == "in_progress",
-            )
+            ).options(selectinload(CareerDiscoverySession.responses))
+            .order_by(CareerDiscoverySession.created_at.desc())
+            .limit(1)
         )
-        for old_session in existing_result.scalars().all():
-            old_session.status = "abandoned"
-            old_session.updated_at = datetime.utcnow()
+        existing_session = existing_result.scalars().first()
+        if existing_session:
+            return existing_session
+
+        # Earlier versions abandoned active sessions during duplicate page
+        # initialization. Recover the session that already contains answers
+        # instead of making the student repeat them.
+        abandoned_result = await db.execute(
+            select(CareerDiscoverySession)
+            .where(
+                CareerDiscoverySession.student_profile_id == profile_id,
+                CareerDiscoverySession.status == "abandoned",
+            )
+            .options(selectinload(CareerDiscoverySession.responses))
+            .order_by(CareerDiscoverySession.created_at.desc())
+        )
+        resumable = max(
+            abandoned_result.scalars().all(),
+            key=lambda item: (len(item.responses), item.created_at),
+            default=None,
+        )
+        if resumable and 0 < len(resumable.responses) < 10:
+            resumable.status = "in_progress"
+            resumable.updated_at = datetime.utcnow()
+            await db.commit()
+            return resumable
 
         session = CareerDiscoverySession(
             student_profile_id=profile_id,
@@ -477,18 +508,33 @@ Current conversation context will be provided. Generate the next question to con
     async def get_active_session(
         self, db: AsyncSession, profile_id: UUID
     ) -> Optional[CareerDiscoverySession]:
-        """Get the active session for a profile."""
+        """Return the session with the most saved answers so progress is retained."""
         result = await db.execute(
             select(CareerDiscoverySession)
             .where(
                 CareerDiscoverySession.student_profile_id == profile_id,
-                CareerDiscoverySession.status == "in_progress",
+                CareerDiscoverySession.status.in_(["in_progress", "abandoned", "completed"]),
             )
             .options(selectinload(CareerDiscoverySession.responses))
             .order_by(CareerDiscoverySession.created_at.desc())
-            .limit(1)
         )
-        return result.scalars().first()
+        sessions = list(result.scalars().all())
+        if not sessions:
+            return None
+
+        # Prefer the newest active session so answers from a new discovery
+        # run supersede an older completed run for this account. If no active
+        # run exists, reopen the most complete saved session/result.
+        active_sessions = [item for item in sessions if item.status == "in_progress"]
+        session = max(active_sessions, key=lambda item: item.created_at) if active_sessions else max(
+            sessions,
+            key=lambda item: (len(item.responses), item.created_at),
+        )
+        if session.status == "abandoned" and 0 < len(session.responses) < 10:
+            session.status = "in_progress"
+            session.updated_at = datetime.utcnow()
+            await db.commit()
+        return session
 
     async def get_student_context(
         self, db: AsyncSession, profile_id: UUID
@@ -539,6 +585,8 @@ Current conversation context will be provided. Generate the next question to con
     ) -> Dict[str, Any]:
         """Generate the next discovery question using STATIC questions (no LLM calls to save quota)."""
         
+        # Count answers, not the question's old display index. The opening
+        # pathway question is question 1 and is stored with sequence_number 1.
         question_number = len(session.responses) + 1
         
         # Determine which question set to use based on session type or first answer
@@ -548,7 +596,7 @@ Current conversation context will be provided. Generate the next question to con
         if question_number == 1:
             # Always start with pathway selection
             return {
-                "question_number": 0,
+                "question_number": 1,
                 "question_text": "Do you have a clear idea of which career path you want to pursue?",
                 "question_type": "pathway_selection",
                 "options": {
@@ -567,7 +615,7 @@ Current conversation context will be provided. Generate the next question to con
         questions = self.QUESTIONS_HAS_IDEA if use_has_idea_questions else self.QUESTIONS_NO_IDEA
         
         # Get question (adjust for 0-indexed after pathway question)
-        question_index = question_number - 2  # -1 for 0-index, -1 for pathway question
+        question_index = question_number - 2  # The first question selects a pathway.
         
         if question_index < 0 or question_index >= len(questions):
             # Return a generic final question if out of range
@@ -678,7 +726,7 @@ Current conversation context will be provided. Generate the next question to con
             profile_summary += f"Education: {edu.degree} in {edu.field_of_study} from {edu.institution_name}\n"
         
         if context["skills"]:
-            skill_names = [s.skill.name for s in context["skills"]]
+            skill_names = [s.skill.name for s in context["skills"] if s.skill]
             profile_summary += f"Skills: {', '.join(skill_names)}\n"
         
         if context["projects"]:
@@ -686,6 +734,7 @@ Current conversation context will be provided. Generate the next question to con
 
         # Try AI analysis first
         try:
+            import asyncio
             # Comprehensive analysis prompt
             analysis_prompt = """You are a senior career advisor creating a DETAILED CAREER DISCOVERY REPORT with comprehensive industry analysis.
 
@@ -772,11 +821,14 @@ Discovery Conversation:
 
 Generate a comprehensive career discovery report with detailed industry analysis."""
 
-            response = await llm.generate_with_system(
-                system_prompt=analysis_prompt,
-                user_message=user_message,
-                temperature=0.6,
-                max_tokens=2500,
+            response = await asyncio.wait_for(
+                llm.generate_with_system(
+                    system_prompt=analysis_prompt,
+                    user_message=user_message,
+                    temperature=0.6,
+                    max_tokens=2500,
+                ),
+                timeout=12.0,
             )
 
             # Parse response

@@ -138,7 +138,7 @@ function CareerResultsContent() {
                 <div className="flex items-start gap-2 mb-2">
                   <MessageCircle className="w-4 h-4 text-blue-500 mt-1 flex-shrink-0" />
                   <p className="text-sm font-medium text-muted-foreground">
-                    Question {response.question_number}
+                    Question {response.sequence_number}
                   </p>
                 </div>
                 <p className="text-sm font-semibold mb-2">{response.question_text}</p>

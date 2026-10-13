@@ -1,7 +1,7 @@
 """Resume-related schemas for API requests and responses."""
 
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, List
 from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -41,12 +41,12 @@ class ResumeExtractionResponse(BaseModel):
     resume_id: UUID
     raw_text: Optional[str] = None
     contact_info: Optional[Dict[str, Any]] = None
-    education: Optional[Dict[str, Any]] = None
-    experience: Optional[Dict[str, Any]] = None
-    projects: Optional[Dict[str, Any]] = None
-    skills: Optional[Dict[str, Any]] = None
-    certifications: Optional[Dict[str, Any]] = None
-    achievements: Optional[Dict[str, Any]] = None
+    education: Optional[Union[Dict[str, Any], List[Any]]] = None
+    experience: Optional[Union[Dict[str, Any], List[Any]]] = None
+    projects: Optional[Union[Dict[str, Any], List[Any]]] = None
+    skills: Optional[Union[Dict[str, Any], List[Any]]] = None
+    certifications: Optional[Union[Dict[str, Any], List[Any]]] = None
+    achievements: Optional[Union[Dict[str, Any], List[Any]]] = None
     is_confirmed: bool
     confirmed_at: Optional[datetime] = None
     extraction_method: Optional[str] = None
@@ -54,6 +54,22 @@ class ResumeExtractionResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ResumeAnalysisResponse(BaseModel):
+    """Deterministic resume score and actionable improvement report."""
+    resume_id: UUID
+    overall_score: float
+    score_grade: str
+    category_scores: Dict[str, float]
+    suggestions: List[str]
+    strengths: List[str]
+    missing_elements: List[str]
+    ats_friendly: bool
+    estimated_pass_rate: str
+    role_fit: List[Dict[str, Any]]
+    extraction_method: Optional[str] = None
+    normalized_extraction: Dict[str, Any]
 
 
 # Resume Review Schemas

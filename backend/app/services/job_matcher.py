@@ -202,6 +202,8 @@ class JobMatcher:
         
         # Normalize skills
         user_skills = set(s.lower().strip() for s in skills if s)
+        from app.services.career_signals import extract_skill_evidence
+        user_skills.update(skill.lower() for skill in extract_skill_evidence(" ".join(skills or []), skills))
         
         # Calculate experience years
         total_experience_years = self._calculate_total_experience(experience)
@@ -323,6 +325,13 @@ class JobMatcher:
         if preferences.get("preferred_category") == job["category"]:
             preference_score = 1.0
         score += preference_score * 0.05
+
+        role_name = job["role_name"].lower()
+        if any(
+            preferred_role in role_name or role_name in preferred_role
+            for preferred_role in preferences.get("preferred_roles", [])
+        ):
+            score += 0.15
         
         # Generate SWOT analysis
         details["strengths"] = self._identify_strengths(job, user_skills, education_level, experience_years)

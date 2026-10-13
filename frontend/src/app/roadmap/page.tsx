@@ -9,15 +9,16 @@ import { Progress } from '@/components/ui/progress'
 import { 
   Map, 
   CheckCircle2, 
-  Circle, 
-  Lock, 
   Clock, 
   Target,
   BookOpen,
   ArrowLeft,
   Download,
   Plus,
-  TrendingUp
+  TrendingUp,
+  Sparkles,
+  Check,
+  ChevronRight
 } from 'lucide-react'
 import { api } from '@/lib/api-client'
 
@@ -25,6 +26,14 @@ interface Milestone {
   id: string
   title: string
   description: string
+  focusTopics: string
+  weekLabel: string
+  work: string
+  practice: string
+  deliverable: string
+  projectDepth: string[]
+  projectTheme: string
+  personalization: string
   status: 'completed' | 'current' | 'upcoming' | 'locked'
   estimatedDuration: string
   skills: string[]
@@ -56,9 +65,16 @@ export default function RoadmapPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [generatingRoadmap, setGeneratingRoadmap] = useState(false)
+  const [updatingMilestoneId, setUpdatingMilestoneId] = useState<string | null>(null)
+  const [activeMilestoneId, setActiveMilestoneId] = useState<string | null>(null)
+  const activeMilestone = roadmap?.milestones.find((milestone) => milestone.id === activeMilestoneId)
+    || roadmap?.milestones.find((milestone) => milestone.status === 'current')
+    || roadmap?.milestones[0]
 
   useEffect(() => {
     loadRoadmap()
+    // The page loads the signed-in user's roadmap once when this route mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const loadRoadmap = async () => {
@@ -66,13 +82,46 @@ export default function RoadmapPage() {
       setLoading(true)
       setError(null)
       
-      // For now, show a message that user needs to complete career discovery first
-      // In production, this would call: await apiClient.get('/api/v1/career/roadmaps')
-      
-      setRoadmap(null)
+      const roadmaps = await api.get<any[]>('/api/v1/career/roadmaps')
+      const requestedId = new URLSearchParams(window.location.search).get('roadmap')
+      const selected = (requestedId && roadmaps.find((item) => item.id === requestedId)) || roadmaps[0]
+      if (selected && ((selected.milestones?.length || 0) < 6 || !selected.description?.includes('[plan-v2]'))) {
+        // Upgrade older text-heavy plans to the current visual phase plan.
+        // Carry completed phases forward so users keep their progress.
+        const upgraded = await api.post<any>('/api/v1/career/roadmaps', {
+          career_goal_id: selected.career_goal_id,
+          recommendation_id: selected.recommendation_id,
+          title: selected.title,
+          target_duration_weeks: Math.max(12, selected.target_duration_weeks || 12),
+        })
+        const completedOrders = (selected.milestones || [])
+          .filter((milestone: any) => milestone.status === 'completed')
+          .map((milestone: any) => milestone.sequence_number || Number(milestone.title?.match(/Phase\s+(\d+)/i)?.[1]))
+          .filter((order: number) => Number.isFinite(order))
+          .sort((a: number, b: number) => a - b)
+        const upgradedMilestones = [...(upgraded.milestones || [])].sort(
+          (a: any, b: any) => (a.sequence_number || 0) - (b.sequence_number || 0)
+        )
+        for (const order of completedOrders) {
+          const milestone = upgradedMilestones.find((item: any) => item.sequence_number === order)
+          if (milestone) {
+            await api.patch(`/api/v1/career/roadmaps/milestones/${milestone.id}`, { status: 'completed' })
+          }
+        }
+        const refreshedRoadmaps = await api.get<any[]>('/api/v1/career/roadmaps')
+        const refreshed = refreshedRoadmaps.find((item) => item.id === upgraded.id) || upgraded
+        const formatted = formatRoadmapData(refreshed)
+        setRoadmap(formatted)
+        setActiveMilestoneId(formatted.milestones.find((item) => item.status === 'current')?.id || formatted.milestones[0]?.id || null)
+        router.replace(`/roadmap?roadmap=${upgraded.id}`)
+      } else {
+        const formatted = selected ? formatRoadmapData(selected) : null
+        setRoadmap(formatted)
+        setActiveMilestoneId(formatted?.milestones.find((item) => item.status === 'current')?.id || formatted?.milestones[0]?.id || null)
+      }
     } catch (err: any) {
       console.error('Failed to load roadmap:', err)
-      setError(null) // Don't show error, just show empty state
+      setError(err.message || 'Failed to load your roadmap')
       setRoadmap(null)
     } finally {
       setLoading(false)
@@ -84,24 +133,50 @@ export default function RoadmapPage() {
     return {
       id: data.id || data.roadmap_id,
       title: data.title || 'Your Career Roadmap',
-      description: data.description || '',
-      targetRole: data.target_role || data.role_name || 'Software Engineer',
+      description: (data.description || '').replace('[plan-v2]', '').trim(),
+      targetRole: data.target_role?.name || data.role_name || data.title?.replace(/^(Path to|Roadmap to)\s*/, '') || 'Software Engineer',
       totalMilestones: data.milestones?.length || 0,
       completedMilestones: data.milestones?.filter((m: any) => m.status === 'completed').length || 0,
-      overallProgress: data.overall_progress || 0,
+      overallProgress: data.progress_percentage ?? data.overall_progress ?? 0,
       estimatedCompletion: data.estimated_completion || formatEstimatedCompletion(data),
-      milestones: (data.milestones || []).map((m: any, index: number) => ({
+      milestones: [...(data.milestones || [])]
+        .sort((a: any, b: any) => (a.sequence_number || a.order || 0) - (b.sequence_number || b.order || 0))
+        .map((m: any, index: number) => {
+        const description = m.description || ''
+        const readSection = (label: string, endings: string[]) => {
+          const start = description.indexOf(`${label}:`)
+          if (start < 0) return ''
+          const contentStart = start + label.length + 1
+          const end = endings.map((ending) => description.indexOf(`\n${ending}:`, contentStart))
+            .filter((position) => position >= 0)
+            .reduce((nearest, position) => Math.min(nearest, position), description.length)
+          return description.slice(contentStart, end).trim()
+        }
+        const weekRange = description.match(/Weeks\s+(\d+)\s*[\u2013\u2014-]\s*(\d+)/i)
+        const projectDepth = readSection('Project depth checklist', ['Project theme'])
+        return {
         id: m.id || m.milestone_id,
         title: m.title,
-        description: m.description,
+        description,
+        focusTopics: readSection('Focus topics', ['Work', 'Practice', 'Personalization', 'Deliverable', 'Project depth checklist', 'Project theme']),
+        weekLabel: weekRange ? `Weeks ${weekRange[1]}-${weekRange[2]}` : `Phase ${index + 1}`,
+        work: readSection('Work', ['Practice', 'Personalization', 'Deliverable', 'Project depth checklist', 'Project theme']),
+        practice: readSection('Practice', ['Personalization', 'Deliverable', 'Project depth checklist', 'Project theme']),
+        deliverable: readSection('Deliverable', ['Project depth checklist', 'Project theme']),
+        projectDepth: projectDepth ? projectDepth.split(';').map((item: string) => item.trim()).filter(Boolean) : [],
+        projectTheme: readSection('Project theme', []),
+        personalization: readSection('Personalization', ['Deliverable', 'Project depth checklist', 'Project theme']),
         status: mapMilestoneStatus(m.status, index),
         estimatedDuration: m.estimated_duration || `${m.estimated_hours || 10} hours`,
         skills: m.skills || m.topics || [],
-        resources: m.resources || [],
+        resources: (m.resources || []).map((resource: any) => typeof resource === 'string'
+          ? { title: resource, type: 'article', url: /^https?:\/\//.test(resource) ? resource : '#' }
+          : resource),
         order: m.order || m.sequence_number || index + 1,
         progress: m.progress || (m.status === 'completed' ? 100 : m.status === 'current' ? 50 : 0),
         completedDate: m.completed_date
-      }))
+      }}
+      )
     }
   }
 
@@ -128,34 +203,39 @@ export default function RoadmapPage() {
       setError(null)
 
       // Get user's career goal first
-      const goalsResponse = await api.get('/api/v1/career/goals')
-      
-      if (!goalsResponse.data || goalsResponse.data.length === 0) {
-        setError('Please set a career goal first. Complete your career discovery to get started.')
-        return
+      const goals = await api.get<any[]>('/api/v1/career/goals')
+      let body: any
+      if (goals.length > 0) {
+        const primaryGoal = goals[0]
+        body = {
+          career_goal_id: primaryGoal.id,
+          career_role_id: primaryGoal.career_role_id,
+          title: `Path to ${primaryGoal.title}`,
+          target_duration_weeks: 12,
+        }
+      } else {
+        const recommendations = await api.get<any[]>('/api/v1/career/recommendations')
+        if (recommendations.length === 0) {
+          setError('Complete career discovery and generate recommendations first.')
+          return
+        }
+        const recommendation = recommendations[0]
+        body = {
+          recommendation_id: recommendation.id,
+          career_role_id: recommendation.career_role_id,
+          title: `Path to ${recommendation.career_role.name}`,
+          target_duration_weeks: 12,
+        }
       }
-
-      const primaryGoal = goalsResponse.data[0]
-
-      // Generate roadmap using AI with fallback to template-based
-      const response = await api.post('/api/v1/career/roadmaps', {
-        career_goal_id: primaryGoal.id,
-        title: `Path to ${primaryGoal.target_role}`,
-        description: `Personalized roadmap to become a ${primaryGoal.target_role}`,
-        target_duration_weeks: 16
-      })
-
-      setRoadmap(formatRoadmapData(response.data))
+      const created = await api.post<any>('/api/v1/career/roadmaps', body)
+      const formatted = formatRoadmapData(created)
+      setRoadmap(formatted)
+      setActiveMilestoneId(formatted.milestones.find((item) => item.status === 'current')?.id || formatted.milestones[0]?.id || null)
+      router.replace(`/roadmap?roadmap=${created.id}`)
     } catch (err: any) {
       console.error('Failed to generate roadmap:', err)
       
-      if (err.response?.status === 404) {
-        setError('No career goal found. Please complete your career discovery first.')
-      } else if (err.response?.status === 400) {
-        setError('Unable to generate roadmap. Please complete your career discovery and set a career goal.')
-      } else {
-        setError('Failed to generate roadmap. Please try again or contact support.')
-      }
+      setError(err.message || 'Failed to generate roadmap. Please try again.')
     } finally {
       setGeneratingRoadmap(false)
     }
@@ -165,30 +245,19 @@ export default function RoadmapPage() {
     if (!roadmap) return
     
     try {
+      setUpdatingMilestoneId(milestoneId)
+      setError(null)
       await api.patch(`/api/v1/career/roadmaps/milestones/${milestoneId}`, {
-        status: newStatus.toUpperCase()
+        status: newStatus === 'current' ? 'in_progress' : newStatus
       })
       
       // Reload roadmap to get updated data
       await loadRoadmap()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update milestone:', err)
-      setError('Failed to update milestone status. Please try again.')
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle2 className="h-5 w-5 text-pathfinder-teal" />
-      case 'current':
-        return <Circle className="h-5 w-5 text-pathfinder-teal fill-pathfinder-teal" />
-      case 'upcoming':
-        return <Circle className="h-5 w-5 text-muted-foreground" />
-      case 'locked':
-        return <Lock className="h-5 w-5 text-muted-foreground" />
-      default:
-        return <Circle className="h-5 w-5 text-muted-foreground" />
+      setError(err?.message || 'Failed to update milestone status. Please try again.')
+    } finally {
+      setUpdatingMilestoneId(null)
     }
   }
 
@@ -300,7 +369,7 @@ export default function RoadmapPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold">{roadmap.title}</h1>
-            <p className="text-muted-foreground">{roadmap.description}</p>
+          <p className="max-w-2xl text-muted-foreground">A focused path from your saved interests and resume evidence. Open a phase to see its topics, weekly work, and completion target.</p>
           </div>
         </div>
         <Button variant="outline" className="gap-2">
@@ -351,128 +420,114 @@ export default function RoadmapPage() {
         </div>
       </Card>
 
-      {/* Visual Roadmap - Timeline */}
-      <div className="space-y-4">
-        {roadmap.milestones.map((milestone, index) => (
-          <Card
-            key={milestone.id}
-            className={`p-6 transition-all ${
-              milestone.status === 'current'
-                ? 'ring-2 ring-pathfinder-teal shadow-lg'
-                : ''
-            }`}
-          >
-            <div className="flex gap-6">
-              {/* Timeline indicator */}
-              <div className="flex flex-col items-center">
-                <div className="relative">
-                  {getStatusIcon(milestone.status)}
-                  {index < roadmap.milestones.length - 1 && (
-                    <div
-                      className={`absolute top-8 left-1/2 -translate-x-1/2 w-0.5 h-16 ${
-                        milestone.status === 'completed'
-                          ? 'bg-pathfinder-teal'
-                          : 'bg-gray-300'
-                      }`}
-                    />
-                  )}
+      {error && <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+
+      <section className="mb-7" aria-label="Roadmap phases">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-pathfinder-teal">Your learning journey</p>
+            <h2 className="mt-1 text-xl font-semibold">Six clear phases</h2>
+          </div>
+          <span className="text-sm text-muted-foreground">Select a phase to explore</span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {roadmap.milestones.map((milestone, index) => {
+            const selected = activeMilestone?.id === milestone.id
+            return (
+              <button
+                type="button"
+                key={milestone.id}
+                onClick={() => setActiveMilestoneId(milestone.id)}
+                aria-pressed={selected}
+                className={`group rounded-xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md ${selected ? 'border-pathfinder-teal bg-pathfinder-teal/5 ring-2 ring-pathfinder-teal/20' : 'bg-white hover:border-pathfinder-teal/50'}`}
+              >
+                <div className="mb-3 flex items-center justify-between">
+                  <span className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold ${milestone.status === 'completed' ? 'bg-pathfinder-teal text-white' : selected ? 'bg-pathfinder-teal text-white' : 'bg-slate-100 text-slate-600'}`}>
+                    {milestone.status === 'completed' ? <Check className="h-4 w-4" /> : String(index + 1).padStart(2, '0')}
+                  </span>
+                  <Badge className={getStatusColor(milestone.status)}>{milestone.status}</Badge>
                 </div>
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-xl font-semibold">{milestone.title}</h3>
-                      <Badge className={getStatusColor(milestone.status)}>
-                        {milestone.status}
-                      </Badge>
-                    </div>
-                    <p className="text-muted-foreground">{milestone.description}</p>
-                  </div>
-
-                  {milestone.status === 'current' && (
-                    <Button
-                      size="sm"
-                      onClick={() => updateMilestoneStatus(milestone.id, 'completed')}
-                    >
-                      Mark Complete
-                    </Button>
-                  )}
+                <p className="font-semibold leading-snug">{milestone.title.replace(/^Phase\s+\d+:\s*/i, '')}</p>
+                <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{milestone.weekLabel}</span>
+                  <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5" />{milestone.estimatedDuration}</span>
                 </div>
-
-                {/* Progress bar for current milestone */}
-                {milestone.status === 'current' && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium">{milestone.progress}%</span>
-                    </div>
-                    <Progress value={milestone.progress} className="h-2" />
-                  </div>
-                )}
-
-                {/* Metadata */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {milestone.estimatedDuration}
-                  </div>
-                  {milestone.completedDate && (
-                    <div className="flex items-center gap-1">
-                      <CheckCircle2 className="h-4 w-4" />
-                      Completed {milestone.completedDate}
-                    </div>
-                  )}
+                <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                  <div className={`h-full rounded-full ${milestone.status === 'completed' ? 'bg-pathfinder-teal' : milestone.status === 'current' ? 'bg-blue-500' : 'bg-transparent'}`} style={{ width: `${milestone.status === 'completed' ? 100 : milestone.status === 'current' ? Math.max(8, milestone.progress) : 0}%` }} />
                 </div>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-pathfinder-teal">Explore phase <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" /></span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
 
-                {/* Skills to learn */}
-                {milestone.skills.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Skills to Master:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {milestone.skills.map((skill, idx) => (
-                        <Badge key={idx} variant="outline">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Resources */}
-                {milestone.resources.length > 0 && milestone.status !== 'locked' && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Learning Resources:</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {milestone.resources.map((resource, idx) => (
-                        <a
-                          key={idx}
-                          href={resource.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2 p-3 rounded-lg border hover:border-pathfinder-teal hover:bg-pathfinder-teal/5 transition-colors"
-                        >
-                          <BookOpen className="h-4 w-4 text-pathfinder-teal flex-shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">
-                              {resource.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground capitalize">
-                              {resource.type}
-                            </p>
-                          </div>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
+      {activeMilestone && (
+        <Card className="overflow-hidden border-0 shadow-lg ring-1 ring-slate-200">
+          <div className="bg-gradient-to-r from-pathfinder-teal/10 via-cyan-50 to-white p-6 md:p-8">
+            <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
+              <div>
+                <div className="mb-3 flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className="border-pathfinder-teal/30 bg-white">{activeMilestone.weekLabel}</Badge>
+                  <Badge className={getStatusColor(activeMilestone.status)}>{activeMilestone.status}</Badge>
+                  <span className="inline-flex items-center gap-1 text-sm text-muted-foreground"><Clock className="h-4 w-4" />{activeMilestone.estimatedDuration}</span>
+                </div>
+                <h2 className="text-2xl font-bold">{activeMilestone.title.replace(/^Phase\s+\d+:\s*/i, '')}</h2>
+                {activeMilestone.personalization && (
+                  <p className="mt-2 flex max-w-3xl items-start gap-2 text-sm text-slate-600"><Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-pathfinder-teal" />{activeMilestone.personalization}</p>
                 )}
               </div>
+              {activeMilestone.status === 'current' && (
+                <Button size="sm" disabled={updatingMilestoneId === activeMilestone.id} onClick={() => updateMilestoneStatus(activeMilestone.id, 'completed')}>
+                  {updatingMilestoneId === activeMilestone.id ? 'Saving…' : 'Mark phase complete'}
+                </Button>
+              )}
             </div>
-          </Card>
-        ))}
-      </div>
+          </div>
+          <div className="grid gap-6 p-6 md:grid-cols-[1fr_280px] md:p-8">
+            <div className="space-y-6">
+              {activeMilestone.focusTopics && (
+                <div>
+                  <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">Topics to cover</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {activeMilestone.focusTopics.split(';').map((topic, index) => <Badge key={index} variant="outline" className="rounded-full bg-slate-50 px-3 py-1.5 text-sm font-medium">{topic.trim().replace(/[.]$/, '')}</Badge>)}
+                  </div>
+                </div>
+              )}
+              <div className="rounded-xl border bg-slate-50/70 p-4 md:p-5">
+                <h3 className="mb-2 font-semibold">What to work on</h3>
+                <p className="text-sm leading-6 text-slate-600">{activeMilestone.work || activeMilestone.description}</p>
+                {activeMilestone.practice && <p className="mt-3 border-t pt-3 text-sm leading-6 text-slate-600">{activeMilestone.practice}</p>}
+              </div>
+              {activeMilestone.projectTheme && <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-4"><p className="text-sm font-semibold text-violet-900">Personal project direction</p><p className="mt-1 text-sm leading-6 text-violet-800">{activeMilestone.projectTheme}</p></div>}
+              {activeMilestone.projectDepth.length > 0 && (
+                <div>
+                  <h3 className="mb-3 font-semibold">Project depth checklist</h3>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {activeMilestone.projectDepth.map((item, index) => <div key={index} className="flex gap-2 rounded-lg border p-3 text-sm text-slate-600"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-pathfinder-teal" />{item}</div>)}
+                  </div>
+                </div>
+              )}
+              {activeMilestone.deliverable && <div className="flex gap-3 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900"><Target className="h-5 w-5 shrink-0 text-emerald-700" /><div><p className="font-semibold">How you’ll know you’re done</p><p className="mt-1 leading-6">{activeMilestone.deliverable}</p></div></div>}
+            </div>
+            <aside className="space-y-4">
+              <div className="rounded-xl border p-4">
+                <h3 className="font-semibold">Phase progress</h3>
+                <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground"><span>{activeMilestone.status === 'completed' ? 'Complete' : activeMilestone.status === 'current' ? 'In progress' : 'Not started'}</span><span>{activeMilestone.status === 'completed' ? '100%' : `${activeMilestone.progress}%`}</span></div>
+                <Progress value={activeMilestone.status === 'completed' ? 100 : activeMilestone.progress} className="mt-2 h-2" />
+              </div>
+              {activeMilestone.resources.length > 0 && (
+                <div className="rounded-xl border p-4">
+                  <h3 className="mb-3 font-semibold">Useful references</h3>
+                  <div className="space-y-2">
+                    {activeMilestone.resources.map((resource, index) => <a key={index} href={resource.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 rounded-lg bg-slate-50 p-3 text-sm transition-colors hover:bg-pathfinder-teal/10"><BookOpen className="h-4 w-4 shrink-0 text-pathfinder-teal" /><span className="min-w-0 flex-1 truncate">{resource.title}</span><ChevronRight className="h-4 w-4 shrink-0 text-slate-400" /></a>)}
+                  </div>
+                </div>
+              )}
+            </aside>
+          </div>
+        </Card>
+      )}
 
       {/* Actions */}
       <div className="mt-8 flex justify-center gap-4">

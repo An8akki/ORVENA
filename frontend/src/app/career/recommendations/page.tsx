@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress'
 import {
   getRecommendations,
   generateRecommendations,
+  getActiveDiscoverySession,
   createRoadmap,
   type CareerRecommendation,
 } from '@/lib/api/career'
@@ -53,6 +54,30 @@ function RecommendationsContent() {
       setError(null)
       const data = await getRecommendations()
       setRecommendations(data)
+
+      // Refresh an earlier recommendation set when this account has saved
+      // newer answers. The server also chooses the latest session by default.
+      try {
+        const session = await getActiveDiscoverySession()
+        const newestRecommendation = [...data].sort(
+          (a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at)
+        )[0]
+        const hasAnswers = (session.responses?.length || 0) > 0
+        const recommendationsAreStale = hasAnswers && (
+          !newestRecommendation ||
+          newestRecommendation.session_id !== session.id ||
+          Date.parse(session.updated_at) > Date.parse(newestRecommendation.updated_at)
+        )
+        if (recommendationsAreStale) {
+          setGenerating(true)
+          const refreshed = await generateRecommendations(session.id)
+          setRecommendations(refreshed)
+        }
+      } catch (refreshError) {
+        console.error('Could not refresh recommendations from saved discovery answers:', refreshError)
+      } finally {
+        setGenerating(false)
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load recommendations')
     } finally {
@@ -73,14 +98,16 @@ function RecommendationsContent() {
     }
   }
 
-  async function handleCreateRoadmap(roleId: string) {
+  async function handleCreateRoadmap(recommendation: CareerRecommendation) {
     try {
-      setCreatingRoadmap(roleId)
+      setCreatingRoadmap(recommendation.id)
       const roadmap = await createRoadmap({
-        target_role_id: roleId,
+        recommendation_id: recommendation.id,
+        career_role_id: recommendation.career_role_id,
+        title: `Path to ${recommendation.career_role.name}`,
         target_duration_weeks: 12,
       })
-      router.push(`/career/roadmap/${roadmap.id}`)
+      router.push(`/roadmap?roadmap=${roadmap.id}`)
     } catch (err: any) {
       setError(err.message || 'Failed to create roadmap')
       setCreatingRoadmap(null)
@@ -303,10 +330,10 @@ function RecommendationsContent() {
                 {/* Actions */}
                 <div className="flex gap-3">
                   <Button
-                    onClick={() => handleCreateRoadmap(rec.career_role_id)}
-                    disabled={creatingRoadmap === rec.career_role_id}
+                    onClick={() => handleCreateRoadmap(rec)}
+                    disabled={creatingRoadmap === rec.id}
                   >
-                    {creatingRoadmap === rec.career_role_id ? (
+                    {creatingRoadmap === rec.id ? (
                       <>
                         <LoadingSpinner size="sm" className="mr-2" />
                         Creating...

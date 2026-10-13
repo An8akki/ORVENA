@@ -81,9 +81,7 @@ async def get_discovery_sessions(
     user_id: UUID = Depends(get_current_user_id),
 ):
     """Get all discovery sessions."""
-    profile = await student_service.get_profile(db, user_id)
-    if not profile:
-        raise NotFoundError("Profile not found")
+    profile = await ensure_profile_exists(db, user_id)
 
     sessions = await career_discovery_service.get_sessions(db, profile.id)
     return sessions
@@ -112,9 +110,7 @@ async def get_discovery_session(
     user_id: UUID = Depends(get_current_user_id),
 ):
     """Get a specific discovery session."""
-    profile = await student_service.get_profile(db, user_id)
-    if not profile:
-        raise NotFoundError("Profile not found")
+    profile = await ensure_profile_exists(db, user_id)
 
     session = await career_discovery_service.get_session(db, session_id, profile.id)
     if not session:
@@ -281,9 +277,7 @@ async def generate_recommendations(
     user_id: UUID = Depends(get_current_user_id),
 ):
     """Generate AI-powered career recommendations."""
-    profile = await student_service.get_profile(db, user_id)
-    if not profile:
-        raise NotFoundError("Profile not found")
+    profile = await ensure_profile_exists(db, user_id)
     
     recommendations = await career_recommendation_service.generate_recommendations(
         db, profile.id, session_id
@@ -297,9 +291,7 @@ async def get_recommendations(
     user_id: UUID = Depends(get_current_user_id),
 ):
     """Get all career recommendations."""
-    profile = await student_service.get_profile(db, user_id)
-    if not profile:
-        raise NotFoundError("Profile not found")
+    profile = await ensure_profile_exists(db, user_id)
     
     recommendations = await career_recommendation_service.get_recommendations(
         db, profile.id
@@ -308,11 +300,6 @@ async def get_recommendations(
 
 
 # Career Roadmap Endpoints
-@router.post(
-    "/roadmaps",
-    response_model=CareerRoadmapResponse,
-    status_code=status.HTTP_201_CREATED,
-)
 @router.post("/roadmaps", response_model=CareerRoadmapResponse, status_code=status.HTTP_201_CREATED)
 async def create_roadmap(
     roadmap_data: CareerRoadmapCreate,
@@ -320,9 +307,7 @@ async def create_roadmap(
     user_id: UUID = Depends(get_current_user_id),
 ):
     """Generate a personalized career development roadmap."""
-    profile = await student_service.get_profile(db, user_id)
-    if not profile:
-        raise NotFoundError("Profile not found")
+    profile = await ensure_profile_exists(db, user_id)
     
     roadmap = await career_recommendation_service.generate_roadmap(
         db,
@@ -332,6 +317,7 @@ async def create_roadmap(
         roadmap_data.title,
         roadmap_data.description,
         roadmap_data.target_duration_weeks,
+        roadmap_data.career_role_id,
     )
     return roadmap
 
@@ -342,9 +328,7 @@ async def get_roadmaps(
     user_id: UUID = Depends(get_current_user_id),
 ):
     """Get all career roadmaps."""
-    profile = await student_service.get_profile(db, user_id)
-    if not profile:
-        raise NotFoundError("Profile not found")
+    profile = await ensure_profile_exists(db, user_id)
     
     roadmaps = await career_recommendation_service.get_roadmaps(db, profile.id)
     return roadmaps

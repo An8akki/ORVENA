@@ -2,7 +2,8 @@
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { AppLayout } from '@/components/layout/AppLayout'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from '@/lib/api-client'
 import {
   Briefcase,
   MapPin,
@@ -47,62 +48,24 @@ export default function JobsPage() {
 }
 
 function JobsContent() {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [jobs, setJobs] = useState<Job[]>([])
+  const [error, setError] = useState<string | null>(null)
 
-  // Sample job data matching our backend database
-  const sampleJobs: Job[] = [
-    {
-      id: '1',
-      title: 'Full-Stack Developer',
-      company: 'Tech Innovations Inc.',
-      location: 'San Francisco, CA (Remote)',
-      salaryMin: 75000,
-      salaryMax: 125000,
-      matchScore: 85,
-      growthRate: 18,
-      demandLevel: 'High',
-      matchedSkills: ['JavaScript', 'React', 'Node.js'],
-      missingSkills: ['TypeScript', 'Docker'],
-      description: 'Join our innovative team building next-generation web applications.',
-      requirements: ['3+ years experience', 'Bachelor\'s degree or equivalent', 'Strong problem-solving skills'],
-      jobUrl: 'https://www.linkedin.com/jobs/view/full-stack-developer',
-      companyWebsite: 'https://techinnovations.com/careers',
-    },
-    {
-      id: '2',
-      title: 'Software Engineer',
-      company: 'Digital Solutions Corp',
-      location: 'New York, NY (Hybrid)',
-      salaryMin: 80000,
-      salaryMax: 130000,
-      matchScore: 82,
-      growthRate: 15,
-      demandLevel: 'High',
-      matchedSkills: ['Python', 'JavaScript', 'AWS'],
-      missingSkills: ['Kubernetes', 'Go'],
-      description: 'Build scalable solutions for enterprise clients.',
-      requirements: ['2+ years experience', 'Computer Science degree preferred', 'Team collaboration skills'],
-      jobUrl: 'https://www.indeed.com/jobs/software-engineer',
-      companyWebsite: 'https://digitalsolutions.com/jobs',
-    },
-    {
-      id: '3',
-      title: 'Data Scientist',
-      company: 'Analytics Pro',
-      location: 'Boston, MA (Remote)',
-      salaryMin: 90000,
-      salaryMax: 150000,
-      matchScore: 78,
-      growthRate: 22,
-      demandLevel: 'High',
-      matchedSkills: ['Python', 'SQL', 'Machine Learning'],
-      missingSkills: ['R', 'Deep Learning', 'Big Data'],
-      description: 'Transform data into actionable insights using advanced analytics.',
-      requirements: ['Master\'s degree preferred', '3+ years ML experience', 'Statistical knowledge'],
-      jobUrl: 'https://www.glassdoor.com/job-listing/data-scientist',
-      companyWebsite: 'https://analyticspro.com/careers',
-    },
-  ]
+  useEffect(() => {
+    api.get<Job[]>('/api/v1/jobs/recommendations')
+      .then(setJobs)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Could not load career matches'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const averageMatch = jobs.length
+    ? Math.round(jobs.reduce((sum, job) => sum + job.matchScore, 0) / jobs.length)
+    : 0
+  const averageGrowth = jobs.length
+    ? Math.round(jobs.reduce((sum, job) => sum + job.growthRate, 0) / jobs.length)
+    : 0
+  const demandLevel = jobs.some((job) => job.demandLevel === 'High') ? 'High' : jobs.length ? 'Medium' : '—'
 
   return (
     <div className="space-y-6">
@@ -116,7 +79,7 @@ function JobsContent() {
         </div>
         <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200">
           <Sparkles className="w-5 h-5 text-blue-600" />
-          <span className="text-sm font-medium text-blue-700">AI-Powered Matching</span>
+              <span className="text-sm font-medium text-blue-700">Profile + Answer Matching</span>
         </div>
       </div>
 
@@ -128,7 +91,7 @@ function JobsContent() {
               <Briefcase className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">{sampleJobs.length}</div>
+              <div className="text-2xl font-bold text-gray-900">{loading ? '…' : jobs.length}</div>
               <div className="text-sm text-gray-600">Matched Jobs</div>
             </div>
           </div>
@@ -140,7 +103,7 @@ function JobsContent() {
               <CheckCircle className="w-5 h-5 text-green-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">85%</div>
+              <div className="text-2xl font-bold text-gray-900">{loading ? '…' : `${averageMatch}%`}</div>
               <div className="text-sm text-gray-600">Avg Match Score</div>
             </div>
           </div>
@@ -152,7 +115,7 @@ function JobsContent() {
               <TrendingUp className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">18%</div>
+              <div className="text-2xl font-bold text-gray-900">{loading ? '…' : `${averageGrowth}%`}</div>
               <div className="text-sm text-gray-600">Avg Growth Rate</div>
             </div>
           </div>
@@ -164,7 +127,7 @@ function JobsContent() {
               <Target className="w-5 h-5 text-orange-600" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-gray-900">High</div>
+              <div className="text-2xl font-bold text-gray-900">{loading ? '…' : demandLevel}</div>
               <div className="text-sm text-gray-600">Market Demand</div>
             </div>
           </div>
@@ -182,8 +145,8 @@ function JobsContent() {
               Smart Job Matching Algorithm
             </h3>
             <p className="text-gray-700 mb-3">
-              Our AI analyzes your skills, experience, education, and preferences to find the perfect job matches.
-              Each recommendation includes a match score, salary data, growth potential, and skills analysis.
+              Your profile, resume skills, education, and saved career discovery answers are scored locally.
+              Each role match includes evidence, skill gaps, market context, and a search link for current openings.
             </p>
             <div className="flex flex-wrap gap-3 text-sm">
               <div className="flex items-center gap-1 text-blue-700">
@@ -202,6 +165,10 @@ function JobsContent() {
                 <CheckCircle className="w-4 h-4" />
                 <span className="font-medium">Market Demand: 10%</span>
               </div>
+              <div className="flex items-center gap-1 text-teal-700">
+                <CheckCircle className="w-4 h-4" />
+                <span className="font-medium">Career Interests: 5%</span>
+              </div>
             </div>
           </div>
         </div>
@@ -215,11 +182,14 @@ function JobsContent() {
           </h2>
         </div>
 
-        {sampleJobs.map((job, index) => (
+        {error && <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">{error}</div>}
+        {loading && <div className="rounded-lg border bg-white p-8 text-center text-gray-600">Matching your profile, resume and saved answers…</div>}
+        {!loading && !error && jobs.length === 0 && <div className="rounded-lg border bg-white p-8 text-center text-gray-600">Add skills or complete career discovery to get profile-specific role matches.</div>}
+        {jobs.map((job, index) => (
           <div
             key={job.id}
             className="bg-white rounded-lg shadow-sm border border-gray-200 card-hover cursor-pointer"
-            onClick={() => job.jobUrl && window.open(job.jobUrl, '_blank')}
+            onClick={() => job.jobUrl && window.open(job.jobUrl, '_blank', 'noopener,noreferrer')}
           >
             <div className="p-6">
               {/* Header */}
@@ -267,7 +237,7 @@ function JobsContent() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
-                      Posted 2 days ago
+                      Career fit profile
                     </div>
                   </div>
                 </div>
@@ -309,7 +279,7 @@ function JobsContent() {
 
               {/* Requirements */}
               <div className="mb-4">
-                <h4 className="text-sm font-semibold text-gray-900 mb-2">Requirements:</h4>
+                  <h4 className="text-sm font-semibold text-gray-900 mb-2">Skills to build next:</h4>
                 <ul className="space-y-1">
                   {job.requirements.map((req, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
@@ -367,7 +337,7 @@ function JobsContent() {
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={!job.jobUrl}
                 >
-                  View Full Details
+                  Search Current Openings
                 </button>
                 <button 
                   onClick={(e) => e.stopPropagation()}
@@ -385,17 +355,16 @@ function JobsContent() {
       <div className="bg-blue-50 rounded-xl border border-blue-200 p-6 text-center">
         <Award className="w-12 h-12 text-blue-600 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          Want More Personalized Matches?
+          Want a Stronger Match?
         </h3>
         <p className="text-gray-600 mb-4">
-          Complete your profile and upload your resume to get even better job recommendations
-          tailored specifically to your experience and career goals.
+          Add skills and project evidence to your profile. These local matches update from your saved answers and resume.
         </p>
         <div className="flex gap-3 justify-center">
-          <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+          <button onClick={() => { window.location.href = '/profile' }} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
             Complete Profile
           </button>
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
+          <button onClick={() => { window.location.href = '/resume' }} className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium">
             Upload Resume
           </button>
         </div>

@@ -40,7 +40,7 @@ class ResumeService:
             raise ValidationError("Only PDF and DOCX files are supported")
 
         # Upload to storage
-        file_url = await storage_service.upload_resume(
+        storage_path = await storage_service.upload_resume(
             file_content, filename, profile_id, content_type
         )
 
@@ -50,8 +50,9 @@ class ResumeService:
             title=title,
             source_type="uploaded",
             original_filename=filename,
+            content_type=content_type,
             file_size_bytes=file_size,
-            file_url=file_url,
+            storage_path=storage_path,
             status="processing",
             is_primary=False,
         )
@@ -62,25 +63,41 @@ class ResumeService:
         version = ResumeVersion(
             resume_id=resume.id,
             version_number=1,
-            file_url=file_url,
-            file_format=content_type.split("/")[-1],
+            storage_path=storage_path,
+            file_format="docx" if "wordprocessingml" in content_type else "pdf",
         )
         db.add(version)
 
         # Extract text and parse with AI
         try:
             resume_text = resume_parser.extract_text(file_content, content_type)
+            extraction_method = "rules"
             
             # Parse with AI (with timeout)
             try:
-                extracted_data = await asyncio.wait_for(
+                ai_data = await asyncio.wait_for(
                     resume_parser.parse_resume_with_ai(resume_text),
                     timeout=10.0
                 )
+                ai_skills = ai_data.get("skills") or {}
+                has_ai_data = any((
+                    ai_data.get("contact_info"),
+                    ai_data.get("summary"),
+                    ai_data.get("education"),
+                    ai_data.get("experience"),
+                    ai_data.get("projects"),
+                    ai_data.get("certifications"),
+                    any(value for value in ai_skills.values()) if isinstance(ai_skills, dict) else bool(ai_skills),
+                ))
+                extraction_method = "ai+rules" if has_ai_data else "rules"
             except (asyncio.TimeoutError, Exception) as e:
                 print(f"AI parsing failed, using basic extraction: {str(e)}")
-                # Fallback to basic text extraction
-                extracted_data = resume_parser.basic_extract(resume_text)
+                ai_data = {}
+                extraction_method = "rules"
+
+            # Keep useful deterministic evidence even when the LLM returns
+            # partial JSON or hallucinates dates/roles from unrelated sections.
+            extracted_data = resume_parser.enrich_extraction(ai_data, resume_text)
 
             # Score the resume (statistical - always works)
             from app.services.resume_scorer import resume_scorer
@@ -92,7 +109,15 @@ class ResumeService:
             # Create extraction record
             extraction = ResumeExtraction(
                 resume_id=resume.id,
-                extracted_data=extracted_data,
+                raw_text=resume_text,
+                contact_info=extracted_data.get("contact_info", {}),
+                education=extracted_data.get("education", []),
+                experience=extracted_data.get("experience", []),
+                projects=extracted_data.get("projects", []),
+                skills=extracted_data.get("skills", {}),
+                certifications=extracted_data.get("certifications", []),
+                achievements=extracted_data.get("achievements", []),
+                extraction_method=extraction_method,
                 is_confirmed=False,
             )
             db.add(extraction)
@@ -105,14 +130,15 @@ class ResumeService:
             try:
                 extraction = ResumeExtraction(
                     resume_id=resume.id,
-                    extracted_data={
-                        "error": str(e),
-                        "status": "parsing_failed",
-                        "contact_info": {},
-                        "skills": {},
-                        "experience": [],
-                        "education": []
-                    },
+                    raw_text=locals().get("resume_text", ""),
+                    contact_info={},
+                    education=[],
+                    experience=[],
+                    projects=[],
+                    skills={},
+                    certifications=[],
+                    achievements=[{"error": str(e), "status": "parsing_failed"}],
+                    extraction_method="fallback",
                     is_confirmed=False,
                 )
                 db.add(extraction)
@@ -194,10 +220,10 @@ class ResumeService:
             raise NotFoundError("Resume not found")
 
         # Delete file from storage if exists
-        if resume.file_url:
+        if resume.storage_path:
             try:
-                file_path = resume.file_url.split("/")[-2:]  # Get user_id/filename
-                await storage_service.delete_resume("/".join(file_path))
+                if not resume.storage_path.startswith("local://"):
+                    await storage_service.delete_resume(resume.storage_path)
             except Exception:
                 pass  # Continue even if file deletion fails
 

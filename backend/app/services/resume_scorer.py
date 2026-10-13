@@ -75,6 +75,7 @@ class ResumeScorer:
         
         # Calculate missing elements
         missing_elements = self._find_missing_elements(extracted_data)
+        role_fit = self._score_role_fit(resume_text, extracted_data)
         
         return {
             'overall_score': round(overall_score, 1),
@@ -83,6 +84,7 @@ class ResumeScorer:
             'suggestions': suggestions,
             'strengths': strengths,
             'missing_elements': missing_elements,
+            'role_fit': role_fit,
             'ats_friendly': self._check_ats_friendly(resume_text, extracted_data),
             'estimated_pass_rate': self._estimate_pass_rate(overall_score)
         }
@@ -189,10 +191,14 @@ class ResumeScorer:
             # GPA mentioned (shows achievement)
             if edu.get('gpa'):
                 try:
-                    gpa = float(edu['gpa'])
-                    if gpa >= 3.5:
+                    gpa_text = str(edu['gpa'])
+                    gpa_parts = re.split(r"\s*/\s*", gpa_text)
+                    gpa = float(gpa_parts[0])
+                    scale = float(gpa_parts[1]) if len(gpa_parts) > 1 else 4.0
+                    normalized_gpa = (gpa / scale) * 4 if scale else 0
+                    if normalized_gpa >= 3.5:
                         score += 10
-                    elif gpa >= 3.0:
+                    elif normalized_gpa >= 3.0:
                         score += 5
                 except:
                     pass
@@ -357,8 +363,50 @@ class ResumeScorer:
         
         if not data.get('skills') or not any(data.get('skills', {}).values()):
             missing.append('skills section')
+
+        if not data.get('projects'):
+            missing.append('project portfolio')
+
+        skills = data.get('skills') or {}
+        if not skills.get('soft'):
+            missing.append('explicit soft skills')
         
         return missing
+
+    def _score_role_fit(self, resume_text: str, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Compare resume evidence with common entry-level technology role skills."""
+        profiles = {
+            "Software Engineer": ["programming", "algorithms", "testing", "git", "api design", "database", "communication"],
+            "Full-Stack Developer": ["javascript", "react", "html", "css", "api design", "database", "backend"],
+            "Frontend Engineer": ["javascript", "react", "html", "css", "design", "testing", "communication"],
+            "AI/ML Engineer": ["python", "machine learning", "computer vision", "statistics", "api design", "testing", "cloud"],
+            "Data Engineer": ["python", "database", "data pipeline", "cloud", "automation", "testing", "linux"],
+            "Cybersecurity Analyst": ["networking", "security", "incident response", "linux", "python", "communication", "critical thinking"],
+        }
+        evidence = (resume_text or "").lower()
+        evidence += " " + " ".join(
+            str(skill).lower()
+            for group in (data.get("skills") or {}).values()
+            if isinstance(group, list)
+            for skill in group
+        )
+        from app.services.career_signals import extract_skill_evidence
+        evidenced_skills = {skill.lower() for skill in extract_skill_evidence(evidence)}
+        results = []
+        for role, requirements in profiles.items():
+            matched = [skill for skill in requirements if skill in evidenced_skills or skill in evidence]
+            missing = [skill for skill in requirements if skill not in evidenced_skills and skill not in evidence]
+            results.append({
+                "role": role,
+                "score": round(100 * len(matched) / len(requirements)),
+                "matched_skills": matched,
+                "priority_gaps": missing[:4],
+                "assessment": (
+                    f"Strong evidence for {len(matched)} of {len(requirements)} core requirements."
+                    if matched else "Add role-specific skills and evidence before targeting this role."
+                ),
+            })
+        return sorted(results, key=lambda item: item["score"], reverse=True)
     
     def _check_ats_friendly(self, resume_text: str, data: Dict[str, Any]) -> bool:
         """Check if resume is ATS-friendly."""

@@ -3,7 +3,7 @@ API V1 Router
 Aggregates all v1 endpoints
 """
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, student, career, resume, system
+from app.api.v1.endpoints import auth, student, career, resume, system, jobs
 
 api_router = APIRouter()
 
@@ -19,12 +19,13 @@ api_router.include_router(career.router, prefix="/career", tags=["Career Discove
 # Include resume router
 api_router.include_router(resume.router, prefix="/resumes", tags=["Resume"])
 
+# Deterministic, profile-specific job matching.
+api_router.include_router(jobs.router, prefix="/jobs", tags=["Jobs"])
+
 # Include system monitoring router (no prefix - goes at root level)
 api_router.include_router(system.router, tags=["System"])
 
 # TODO: Include other routers when implemented
-# from app.api.v1.endpoints import jobs, interviews
-# api_router.include_router(jobs.router, prefix="/jobs", tags=["Jobs"])
 # api_router.include_router(interviews.router, prefix="/interview", tags=["Interviews"])
 
 
