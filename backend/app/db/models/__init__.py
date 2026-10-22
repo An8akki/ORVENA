@@ -56,6 +56,14 @@ from app.db.models.intelligence import (
     AIGenerationRecord,
     MLModelMetadata,
 )
+from app.db.models.launchpad import (
+    ProjectMilestone,
+    ProjectAssessment,
+    ProjectOutcomeAssessment,
+    ProjectShowcase,
+    Opportunity,
+    ProjectOpportunityApplication,
+)
 
 __all__ = [
     "User",
@@ -98,4 +106,10 @@ __all__ = [
     "ResumeRoleMatch",
     "AIGenerationRecord",
     "MLModelMetadata",
+    "ProjectMilestone",
+    "ProjectAssessment",
+    "ProjectOutcomeAssessment",
+    "ProjectShowcase",
+    "Opportunity",
+    "ProjectOpportunityApplication",
 ]

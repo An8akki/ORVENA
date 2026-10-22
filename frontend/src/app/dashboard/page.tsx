@@ -4,7 +4,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Target, FileText, Briefcase, ArrowRight } from 'lucide-react'
+import { Target, FileText, Briefcase, ArrowRight, Rocket } from 'lucide-react'
 import Link from 'next/link'
 
 function DashboardContent() {
@@ -22,7 +22,7 @@ function DashboardContent() {
         </div>
 
         {/* Quick Actions Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           {/* Career Discovery Card */}
           <Link href="/career/discovery">
             <Card className="glass-card card-hover h-full border-midnight-200">
@@ -43,6 +43,32 @@ function DashboardContent() {
                   size="sm"
                 >
                   Start Discovery
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                </Button>
+              </CardContent>
+            </Card>
+          </Link>
+
+          {/* Project Launchpad Card */}
+          <Link href="/projects">
+            <Card className="glass-card card-hover h-full border-midnight-200">
+              <CardHeader>
+                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-amber-500/10 mb-3 transition-colors">
+                  <Rocket className="h-7 w-7 text-amber-600" strokeWidth={2} />
+                </div>
+                <CardTitle className="text-lg font-display text-midnight-950">
+                  Project Launchpad
+                </CardTitle>
+                <CardDescription className="text-midnight-600">
+                  Discover ideas, track milestones & evaluate projects
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-ivory-50 group/btn"
+                  size="sm"
+                >
+                  Explore Launchpad
                   <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                 </Button>
               </CardContent>

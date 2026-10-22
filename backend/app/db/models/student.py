@@ -3,13 +3,13 @@ Student Profile Models
 Student information, education, skills, projects, and certifications
 """
 from datetime import date, datetime
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from sqlalchemy import (
     String, Integer, Text, Date, Boolean, ARRAY, 
     ForeignKey, Numeric, CheckConstraint, UniqueConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 
 from app.db.base import Base, UUIDMixin, TimestampMixin
 
@@ -222,8 +222,54 @@ class Project(Base, UUIDMixin, TimestampMixin):
     impact_metrics: Mapped[Optional[List[str]]] = mapped_column(ARRAY(Text))
     visibility: Mapped[str] = mapped_column(String(20), default="public")  # public, private
     
+    # Launchpad extended fields
+    problem_statement: Mapped[Optional[str]] = mapped_column(Text)
+    target_users: Mapped[Optional[str]] = mapped_column(Text)
+    proposed_solution: Mapped[Optional[str]] = mapped_column(Text)
+    domain: Mapped[Optional[str]] = mapped_column(String(100))
+    difficulty_level: Mapped[Optional[str]] = mapped_column(String(50), default="intermediate")
+    primary_goal: Mapped[Optional[str]] = mapped_column(String(50), default="portfolio")
+    stage: Mapped[Optional[str]] = mapped_column(String(50), default="idea")  # idea, planning, in_progress, validation, completed, published
+    status: Mapped[Optional[str]] = mapped_column(String(50), default="in_progress")  # not_started, in_progress, blocked, completed, archived
+    blocker_description: Mapped[Optional[str]] = mapped_column(Text)
+    weekly_hours: Mapped[Optional[int]] = mapped_column(Integer)
+    estimated_duration_weeks: Mapped[Optional[int]] = mapped_column(Integer)
+    completion_percentage: Mapped[int] = mapped_column(Integer, default=0)
+    plan_data: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSONB)
+    origin: Mapped[Optional[str]] = mapped_column(String(50), default="scratch")  # scratch, catalogue, resume
+    catalogue_idea_id: Mapped[Optional[str]] = mapped_column(String(100))
+    
     # Relationships
     student_profile: Mapped["StudentProfile"] = relationship(back_populates="projects")
+    launchpad_milestones: Mapped[List["ProjectMilestone"]] = relationship(
+        "ProjectMilestone",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="ProjectMilestone.sequence_order"
+    )
+    launchpad_assessments: Mapped[List["ProjectAssessment"]] = relationship(
+        "ProjectAssessment",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="ProjectAssessment.created_at.desc()"
+    )
+    launchpad_outcomes: Mapped[List["ProjectOutcomeAssessment"]] = relationship(
+        "ProjectOutcomeAssessment",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        order_by="ProjectOutcomeAssessment.created_at.desc()"
+    )
+    launchpad_showcase: Mapped[Optional["ProjectShowcase"]] = relationship(
+        "ProjectShowcase",
+        back_populates="project",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+    launchpad_applications: Mapped[List["ProjectOpportunityApplication"]] = relationship(
+        "ProjectOpportunityApplication",
+        back_populates="project",
+        cascade="all, delete-orphan"
+    )
     
     __table_args__ = (
         CheckConstraint(

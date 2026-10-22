@@ -19,6 +19,7 @@ import {
   Settings,
   HelpCircle,
   X,
+  Rocket,
 } from 'lucide-react'
 
 interface NavItem {
@@ -49,6 +50,12 @@ const mainNavItems: NavItem[] = [
     label: 'Resume Studio',
     href: '/resume',
     icon: FileText,
+  },
+  {
+    label: 'Project Launchpad',
+    href: '/projects',
+    icon: Rocket,
+    badge: 'New',
   },
   {
     label: 'Roadmap',

@@ -10,6 +10,7 @@ import React, { useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { Header } from './Header'
 import { MobileDrawer } from './MobileDrawer'
+import { OrvenaGuideWidget } from '@/components/guide/OrvenaGuideWidget'
 import { cn } from '@/lib/utils'
 
 interface AppLayoutProps {
@@ -64,6 +65,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           {children}
         </div>
       </main>
+
+      {/* Floating Orvena Guide Platform Assistant */}
+      <OrvenaGuideWidget />
     </div>
   )
 }

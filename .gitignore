@@ -84,7 +84,7 @@ backend/venv/
 backend/.venv/
 
 # Alembic
-backend/alembic.ini
+# (alembic.ini is tracked for migrations)
 
 # Type checking
 .mypy_cache/

@@ -20,6 +20,7 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
+  Rocket,
 } from 'lucide-react'
 
 interface NavItem {
@@ -55,6 +56,12 @@ const mainNavItems: NavItem[] = [
     label: 'Job Recommender',
     href: '/jobs',
     icon: Compass,
+  },
+  {
+    label: 'Project Launchpad',
+    href: '/projects',
+    icon: Rocket,
+    badge: 'New',
   },
   {
     label: 'Career Roadmap',
