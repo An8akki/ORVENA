@@ -76,7 +76,7 @@ export async function uploadResume(file: File, title: string): Promise<Resume> {
   formData.append('title', title)
 
   const token = await getAccessToken()
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API || 'http://localhost:8000'
   const response = await fetch(`${apiUrl}/api/v1/resumes/upload`, {
     method: 'POST',
     headers: {
