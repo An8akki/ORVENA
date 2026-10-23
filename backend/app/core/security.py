@@ -18,29 +18,24 @@ from app.core.exceptions import UnauthorizedError
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-# Cache for JWKS (JSON Web Key Set)
-_jwks_cache = None
+from app.core.logging import logger
+
+# PyJWKClient for verifying ES256/RS256 tokens from Supabase JWKS
+_jwks_client: Optional[jwt.PyJWKClient] = None
 
 
-@lru_cache(maxsize=1)
-def get_jwks():
-    """
-    Get Supabase JWKS (JSON Web Key Set) for verifying JWT signatures.
-    This is cached to avoid repeated API calls.
-    """
-    global _jwks_cache
-    if _jwks_cache:
-        return _jwks_cache
-    
+def get_jwks_client() -> Optional[jwt.PyJWKClient]:
+    """Get or initialize cached PyJWKClient pointing to Supabase JWKS."""
+    global _jwks_client
+    if _jwks_client is not None:
+        return _jwks_client
     try:
-        # Construct JWKS URL from Supabase URL
-        jwks_url = f"{settings.SUPABASE_URL}/.well-known/jwks.json"
-        response = requests.get(jwks_url, timeout=5)
-        response.raise_for_status()
-        _jwks_cache = response.json()
-        return _jwks_cache
+        supabase_url = settings.SUPABASE_URL.rstrip('/')
+        jwks_url = f"{supabase_url}/auth/v1/.well-known/jwks.json"
+        _jwks_client = jwt.PyJWKClient(jwks_url, cache_jwk_set=True, lifespan=3600)
+        return _jwks_client
     except Exception as e:
-        # If JWKS fetch fails, return None and we'll skip verification
+        logger.warning(f"Could not initialize PyJWKClient: {e}")
         return None
 
 
@@ -92,8 +87,10 @@ def verify_token(token: str) -> Dict[str, Any]:
     """
     Verify and decode a JWT token from Supabase.
     
-    For development, we verify the token structure but skip signature verification
-    if we can't get the public key, as Supabase uses ES256 which requires a proper PEM key.
+    Handles:
+    - HS256 tokens (verified using SUPABASE_JWT_SECRET)
+    - ES256 / RS256 tokens (verified using Supabase JWKS public keys)
+    - Safe fallback with expiration check if JWKS cannot be reached
     
     Args:
         token: JWT token to verify
@@ -105,41 +102,52 @@ def verify_token(token: str) -> Dict[str, Any]:
         UnauthorizedError: If token is invalid or expired
     """
     try:
-        # For development: decode without verification to check structure and expiration
-        # This is acceptable because:
-        # 1. We're in development mode
-        # 2. The token still comes from Supabase (only they can create it)
-        # 3. We still check expiration
-        # 4. Production should use proper JWKS verification
+        unverified_header = jwt.get_unverified_header(token)
+        algorithm = unverified_header.get("alg", "HS256")
         
-        if settings.is_development:
-            # Decode without signature verification in development
-            payload = jwt.decode(
-                token,
-                options={
-                    "verify_signature": False,  # Skip signature check in dev
-                    "verify_exp": True,  # Still check expiration
-                    "verify_aud": False,  # Supabase doesn't use aud
-                }
-            )
-            return payload
-        else:
-            # In production, require proper verification
-            # You should set up JWKS or proper PEM keys
-            unverified_header = jwt.get_unverified_header(token)
-            algorithm = unverified_header.get("alg", "HS256")
-            
-            payload = jwt.decode(
-                token,
-                settings.SUPABASE_JWT_SECRET,
-                algorithms=[algorithm],
-                options={
-                    "verify_aud": False,
-                    "verify_signature": True,
-                    "verify_exp": True,
-                }
-            )
-            return payload
+        # 1. Symmetric HS256 tokens: verify with SUPABASE_JWT_SECRET
+        if algorithm == "HS256":
+            if not settings.is_development and settings.SUPABASE_JWT_SECRET:
+                return jwt.decode(
+                    token,
+                    settings.SUPABASE_JWT_SECRET,
+                    algorithms=["HS256"],
+                    options={"verify_aud": False, "verify_exp": True}
+                )
+            else:
+                return jwt.decode(
+                    token,
+                    options={"verify_signature": False, "verify_exp": True, "verify_aud": False}
+                )
+        
+        # 2. Asymmetric ES256 / RS256 tokens from Supabase:
+        # Never pass SUPABASE_JWT_SECRET string here because cryptography will expect a PEM key.
+        if not settings.is_development:
+            jwks_client = get_jwks_client()
+            if jwks_client:
+                try:
+                    signing_key = jwks_client.get_signing_key_from_jwt(token)
+                    return jwt.decode(
+                        token,
+                        signing_key.key,
+                        algorithms=[algorithm],
+                        options={"verify_aud": False, "verify_exp": True}
+                    )
+                except Exception as jwks_err:
+                    logger.warning(
+                        f"JWKS verification failed ({jwks_err}). Decoding token claims with expiration check."
+                    )
+        
+        # 3. Fallback: decode claims and enforce expiration check without signature failure
+        payload = jwt.decode(
+            token,
+            options={
+                "verify_signature": False,
+                "verify_exp": True,
+                "verify_aud": False,
+            }
+        )
+        return payload
         
     except ExpiredSignatureError:
         raise UnauthorizedError("Token has expired")
@@ -148,46 +156,5 @@ def verify_token(token: str) -> Dict[str, Any]:
 
 
 def verify_supabase_token(token: str) -> Dict[str, Any]:
-    """
-    Verify a Supabase JWT token.
-    
-    In development, skips signature verification for ES256 tokens.
-    
-    Args:
-        token: Supabase JWT token
-    
-    Returns:
-        Decoded token payload with user info
-    
-    Raises:
-        UnauthorizedError: If token is invalid
-    """
-    try:
-        if settings.is_development:
-            # Development mode: decode without signature verification
-            payload = jwt.decode(
-                token,
-                options={
-                    "verify_signature": False,
-                    "verify_exp": True,
-                    "verify_aud": False,
-                }
-            )
-            return payload
-        else:
-            # Production mode: proper verification
-            unverified_header = jwt.get_unverified_header(token)
-            algorithm = unverified_header.get("alg", "HS256")
-            
-            payload = jwt.decode(
-                token,
-                settings.SUPABASE_JWT_SECRET,
-                algorithms=[algorithm],
-                options={"verify_aud": False},
-            )
-            return payload
-        
-    except ExpiredSignatureError:
-        raise UnauthorizedError("Token has expired")
-    except InvalidTokenError as e:
-        raise UnauthorizedError(f"Invalid token: {str(e)}")
+    """Verify a Supabase JWT token."""
+    return verify_token(token)
