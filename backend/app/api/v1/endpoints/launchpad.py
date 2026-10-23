@@ -196,9 +196,12 @@ async def get_resume_projects(
                     items = raw_projects.get("projects") or raw_projects.get("items") or [raw_projects]
 
                 for item in items:
+                    if isinstance(item, str):
+                        parts = item.split(" - ", 1)
+                        item = {"title": parts[0].strip(), "description": parts[1] if len(parts) > 1 else item}
                     if not isinstance(item, dict):
                         continue
-                    name = item.get("name") or item.get("title") or "Unnamed Project"
+                    name = item.get("name") or item.get("title") or item.get("project_name") or "Unnamed Project"
                     name = str(name).strip()
                     if not name or name.lower() in seen_titles:
                         continue

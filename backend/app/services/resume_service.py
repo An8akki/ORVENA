@@ -77,7 +77,7 @@ class ResumeService:
             try:
                 ai_data = await asyncio.wait_for(
                     resume_parser.parse_resume_with_ai(resume_text),
-                    timeout=10.0
+                    timeout=30.0
                 )
                 ai_skills = ai_data.get("skills") or {}
                 has_ai_data = any((

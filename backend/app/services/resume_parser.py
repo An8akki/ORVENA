@@ -288,19 +288,51 @@ Return ONLY the JSON object, no other text."""
                     "achievements": achievements,
                 }]
 
-        # Extract project names and their nearby text as evidence for a portfolio.
-        projects_section = section("Projects", ["Achievements", "Skills", "Experience", "Education"])
-        project_matches = list(re.finditer(r"(LearnFlow|Intelligent Crop Monitoring System|GrowMate AI)", projects_section, re.I))
-        for index, match in enumerate(project_matches):
-            stop = project_matches[index + 1].start() if index + 1 < len(project_matches) else len(projects_section)
-            project_text = projects_section[match.start():stop].strip(" -:;\n")
-            project_title = match.group(1)
-            data["projects"].append({
-                "title": project_title,
-                "description": project_text[:1200],
-                "technologies": [skill for skill in technical_keywords if re.search(rf"\b{re.escape(skill)}\b", project_text, re.I)],
-                "url": "",
-            })
+        # Extract project names and their nearby text generically as evidence for a portfolio.
+        projects_section = section("Projects", ["Achievements", "Skills", "Experience", "Education", "Certifications"])
+        if projects_section:
+            known_matches = list(re.finditer(r"(LearnFlow|Intelligent Crop Monitoring System|GrowMate AI)", projects_section, re.I))
+            if known_matches:
+                for index, match in enumerate(known_matches):
+                    stop = known_matches[index + 1].start() if index + 1 < len(known_matches) else len(projects_section)
+                    project_text = projects_section[match.start():stop].strip(" -:;\n")
+                    project_title = match.group(1)
+                    data["projects"].append({
+                        "title": project_title,
+                        "description": project_text[:1200],
+                        "technologies": [skill for skill in technical_keywords if re.search(rf"\b{re.escape(skill)}\b", project_text, re.I)],
+                        "url": "",
+                    })
+            else:
+                # Generic project extraction for any student resume
+                lines = [l.strip() for l in projects_section.split("\n") if l.strip()]
+                current_project = None
+                for line in lines:
+                    is_bullet = line.startswith(("•", "-", "*", "–"))
+                    clean_line = line.lstrip("•-*– \t")
+                    header_candidate = re.match(r"^([A-Z0-9][A-Za-z0-9\s\-_/&]{2,60}?)(?:\s*(?:\||-|–|:|\()\s*(.*?))?$", clean_line)
+
+                    if (not is_bullet and len(clean_line) < 70 and not clean_line.endswith(".")) or (header_candidate and not is_bullet):
+                        title = header_candidate.group(1).strip() if header_candidate else clean_line
+                        if len(title) > 2 and not re.match(r"^(github|link|technologies|tools|description|summary|key achievements)$", title, re.I):
+                            if current_project:
+                                data["projects"].append(current_project)
+                            current_project = {
+                                "title": title,
+                                "description": clean_line,
+                                "technologies": [skill for skill in technical_keywords if re.search(rf"\b{re.escape(skill)}\b", clean_line, re.I)],
+                                "url": "",
+                            }
+                            continue
+
+                    if current_project:
+                        current_project["description"] += " " + clean_line
+                        for skill in technical_keywords:
+                            if skill not in current_project["technologies"] and re.search(rf"\b{re.escape(skill)}\b", clean_line, re.I):
+                                current_project["technologies"].append(skill)
+
+                if current_project:
+                    data["projects"].append(current_project)
 
         achievements_section = section("Achievements", ["Skills", "Experience", "Education", "Certifications"])
         data["achievements"] = [
