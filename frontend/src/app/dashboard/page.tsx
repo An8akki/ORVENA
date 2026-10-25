@@ -128,6 +128,44 @@ function DashboardContent() {
           </Link>
         </div>
 
+        <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <Card className="border-midnight-200 bg-midnight-950 text-ivory-50">
+            <CardHeader>
+              <CardTitle className="font-display text-xl">Continue your journey</CardTitle>
+              <CardDescription className="text-ivory-200">
+                Turn your next small action into measurable career progress.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              {[
+                ['Discover', 'Answer a few questions to clarify your direction.', '/career/discovery'],
+                ['Analyze', 'Improve your resume evidence and ATS readiness.', '/resume'],
+                ['Plan', 'Follow a focused roadmap for your target role.', '/roadmap'],
+              ].map(([title, description, href]) => (
+                <Link key={title} href={href} className="rounded-lg border border-ivory-50/20 p-4 transition-colors hover:bg-ivory-50/10">
+                  <p className="mb-1 font-semibold">{title}</p>
+                  <p className="text-sm text-ivory-200">{description}</p>
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+          <Card className="border-pathfinder-200 bg-pathfinder-50">
+            <CardHeader>
+              <CardTitle className="font-display text-xl text-midnight-950">Your next best step</CardTitle>
+              <CardDescription className="text-midnight-600">
+                Start with a resume analysis so recommendations use your real skills.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/resume">
+                <Button className="bg-pathfinder-500 text-ivory-50 hover:bg-pathfinder-600">
+                  Analyze my resume <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </section>
+
       </div>
     </AppLayout>
   )

@@ -19,6 +19,11 @@ export interface SignInData {
  * Sign up a new user
  */
 export async function signUp({ email, password, fullName }: SignUpData) {
+  const { data: currentSession } = await supabase.auth.getSession()
+  if (currentSession.session) {
+    await supabase.auth.signOut()
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
@@ -26,6 +31,10 @@ export async function signUp({ email, password, fullName }: SignUpData) {
       data: {
         full_name: fullName,
       },
+      emailRedirectTo:
+        typeof window !== 'undefined'
+          ? `${window.location.origin}/auth/login?confirmed=1`
+          : undefined,
     },
   })
 

@@ -64,9 +64,9 @@ GUIDE_INTENTS: List[Dict[str, Any]] = [
     },
     {
         "id": "PROJECT_DOUBTS",
-        "keywords": ["doubt", "doubts", "confused", "which project", "what project", "how to choose", "stuck", "what should i build", "pick project", "beginner project", "best project", "help with project"],
+        "keywords": ["doubt", "doubts", "confused", "which project", "what project", "how to choose", "how do i choose", "project idea", "stuck", "what should i build", "pick project", "beginner project", "best project", "help with project"],
         "patterns": [
-            r"\b(doubt|doubts|confused|stuck|which project|what project|what should i (build|make|do)|how (to|do i) choose (a )?project)\b",
+            r"\b(doubt|doubts|confused|stuck|which project|project idea|what project|what should i (build|make|do)|how (to|do i) choose (the |a )?(right )?project)\b",
             r"\b(help with (my )?project|project idea doubts)\b",
         ],
         "confidence_base": 0.96,

@@ -355,6 +355,29 @@ export default function RoadmapPage() {
   }
 
   // Roadmap exists - show visual roadmap
+  const exportRoadmap = () => {
+    if (!roadmap) return
+    const content = [
+      roadmap.title,
+      `Target role: ${roadmap.targetRole}`,
+      roadmap.description,
+      '',
+      ...roadmap.milestones.map((milestone, index) =>
+        `${index + 1}. ${milestone.title} (${milestone.weekLabel})\n` +
+        `${milestone.description}\n` +
+        `Work: ${milestone.work}\n` +
+        `Deliverable: ${milestone.deliverable}`
+      ),
+    ].join('\n')
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `${roadmap.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.txt`
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
@@ -372,7 +395,7 @@ export default function RoadmapPage() {
           <p className="max-w-2xl text-muted-foreground">A focused path from your saved interests and resume evidence. Open a phase to see its topics, weekly work, and completion target.</p>
           </div>
         </div>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={exportRoadmap}>
           <Download className="h-4 w-4" />
           Export
         </Button>

@@ -69,6 +69,13 @@ This guide deploys ORVENA on the **100% free tier** using the industry-standard 
    - Vercel will build and launch your frontend in under 60 seconds!
    - You will get a live URL (e.g. `https://orvena.vercel.app`).
 
+5. **Configure Supabase authentication redirects:**
+   - In Supabase, open **Authentication → URL Configuration**.
+   - Set **Site URL** to the exact Vercel production URL.
+   - Add `https://<your-vercel-domain>/auth/login?confirmed=1` to **Redirect URLs**.
+   - Keep `http://localhost:3000/auth/login?confirmed=1` only for local development.
+   - Redeploy after changing Vercel environment variables. Never copy `.env.local` into the Vercel project.
+
 ---
 
 ## ✅ Post-Deployment Verification
@@ -78,3 +85,8 @@ This guide deploys ORVENA on the **100% free tier** using the industry-standard 
 3. Click **Project Launchpad** on the sidebar $\to$ verify your detected resume projects appear.
 4. Click **Orvena Guide** (bottom right) $\to$ type `"hi"` to see the personalized greeting.
 5. All database operations, evaluations, and roadmap milestones are live on production!
+
+If a deployed page tries `localhost:8000`, `NEXT_PUBLIC_API_URL` is missing from the
+Vercel **Production** environment. Add it and redeploy; the application now uses the
+Render service URL as a safe production fallback, but the environment variable remains
+the authoritative setting for custom Render domains.

@@ -5,7 +5,12 @@
 
 import { getAccessToken } from './auth'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API || 'http://localhost:8000'
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API
+const API_URL =
+  configuredApiUrl ||
+  (process.env.NODE_ENV === 'production'
+    ? 'https://orvena-backend.onrender.com'
+    : 'http://localhost:8000')
 
 export class APIError extends Error {
   constructor(
@@ -77,7 +82,7 @@ async function apiRequest<T>(
     headers.set('Authorization', `Bearer ${authToken}`)
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(`${API_URL.replace(/\/$/, '')}${endpoint}`, {
     ...fetchOptions,
     headers,
   })
@@ -123,7 +128,7 @@ export const api = {
       headers['Authorization'] = `Bearer ${authToken}`
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${API_URL.replace(/\/$/, '')}${endpoint}`, {
       method: 'POST',
       headers,
       body: formData,

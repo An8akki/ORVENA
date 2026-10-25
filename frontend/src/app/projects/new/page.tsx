@@ -20,6 +20,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api-client'
+import { showNotification } from '@/lib/notifications'
 
 interface PlannedPhase {
   phase_name: string
@@ -77,7 +78,7 @@ function NewProjectContent() {
   const handleGeneratePlan = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !problemStatement.trim() || !proposedSolution.trim()) {
-      alert('Please fill out the project title, problem statement, and proposed solution.')
+      showNotification('Please fill out the project title, problem statement, and proposed solution.', 'error')
       return
     }
 
@@ -87,7 +88,7 @@ function NewProjectContent() {
       .filter(Boolean)
 
     if (techArray.length === 0) {
-      alert('Please specify at least one core technology.')
+      showNotification('Please specify at least one core technology.', 'error')
       return
     }
 
@@ -111,7 +112,7 @@ function NewProjectContent() {
       setGeneratedPlan(plan)
       setStep(2)
     } catch (err: any) {
-      alert(err.message || 'Failed to generate project plan')
+      showNotification(err.message || 'Failed to generate project plan', 'error')
     } finally {
       setGenerating(false)
     }
@@ -157,7 +158,7 @@ function NewProjectContent() {
 
       router.push(`/projects/${created.id}`)
     } catch (err: any) {
-      alert(err.message || 'Failed to create project')
+      showNotification(err.message || 'Failed to create project', 'error')
       setCommitting(false)
     }
   }

@@ -534,9 +534,9 @@ Create a detailed development roadmap to prepare for this role and achieve the c
                     system_prompt=self.ROADMAP_SYSTEM_PROMPT,
                     user_message=context,
                     temperature=0.7,
-                    max_tokens=2000,
+                    max_tokens=1400,
                 ),
-                timeout=12.0,
+                timeout=4.0,
             )
             roadmap_data = self._parse_roadmap(
                 response.content,

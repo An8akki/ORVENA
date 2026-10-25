@@ -30,6 +30,7 @@ export default function RegisterPage() {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [confirmationRequired, setConfirmationRequired] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const {
@@ -45,18 +46,18 @@ export default function RegisterPage() {
       setError(null)
       setLoading(true)
 
-      await signUp({
+      const result = await signUp({
         email: data.email,
         password: data.password,
         fullName: data.fullName,
       })
 
       setSuccess(true)
+      setConfirmationRequired(!result.session)
       
-      // Redirect after successful registration
-      setTimeout(() => {
-        router.push('/dashboard')
-      }, 2000)
+      if (result.session) {
+        setTimeout(() => router.push('/dashboard'), 1200)
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to create account')
     } finally {
@@ -78,7 +79,9 @@ export default function RegisterPage() {
             Welcome to ORVENA!
           </h2>
           <p className="text-base text-midnight-600 mb-6">
-            Your account has been created successfully. Redirecting you to your dashboard...
+            {!confirmationRequired
+              ? 'Your account has been created successfully. Redirecting you to your dashboard...'
+              : 'Your account has been created. Check your email to confirm it, then sign in to continue.'}
           </p>
           <div className="flex justify-center">
             <div className="w-8 h-8 border-3 border-pathfinder-500 border-t-transparent rounded-full animate-spin" />

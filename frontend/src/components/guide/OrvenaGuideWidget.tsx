@@ -126,7 +126,7 @@ export function OrvenaGuideWidget() {
       const guideMsg: Message = {
         id: `guide-${Date.now()}`,
         sender: 'guide',
-        text: "I'm running in offline mode. You can navigate directly to any of the core sections below:",
+        text: "I couldn't reach the Guide service right now. You can still navigate directly to a core section below, or try your question again in a moment:",
         actions: [
           { label: 'Project Launchpad', href: '/projects', description: 'Ideas, milestones & outcomes' },
           { label: 'Career Discovery', href: '/career/discovery', description: 'Guided questionnaire' },

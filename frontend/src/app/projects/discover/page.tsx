@@ -22,6 +22,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api-client'
+import { showNotification } from '@/lib/notifications'
 import { cn } from '@/lib/utils'
 
 interface MilestoneTmpl {
@@ -128,7 +129,7 @@ function ProjectDiscoverContent() {
 
       router.push(`/projects/${newProject.id}`)
     } catch (err: any) {
-      alert(err.message || 'Failed to start project')
+      showNotification(err.message || 'Failed to start project', 'error')
       setCreatingId(null)
     }
   }

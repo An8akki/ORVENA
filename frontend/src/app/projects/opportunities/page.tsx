@@ -22,6 +22,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api-client'
+import { showNotification } from '@/lib/notifications'
 import { cn } from '@/lib/utils'
 
 interface Opportunity {
@@ -102,7 +103,7 @@ function OpportunitiesContent() {
         await api.delete(`/api/v1/launchpad/opportunities/${oppId}/bookmark`)
         setSavedApps((prev) => prev.filter((s) => s.opportunity_id !== oppId))
       } catch (err: any) {
-        alert(err.message || 'Failed to remove bookmark')
+        showNotification(err.message || 'Failed to remove bookmark', 'error')
       }
     } else {
       try {
@@ -112,7 +113,7 @@ function OpportunitiesContent() {
         )
         setSavedApps((prev) => [...prev, created])
       } catch (err: any) {
-        alert(err.message || 'Failed to save opportunity')
+        showNotification(err.message || 'Failed to save opportunity', 'error')
       }
     }
   }
@@ -126,7 +127,7 @@ function OpportunitiesContent() {
         prev.map((s) => (s.opportunity_id === oppId ? { ...s, status: nextStatus } : s))
       )
     } catch (err: any) {
-      alert(err.message || 'Failed to update status')
+      showNotification(err.message || 'Failed to update status', 'error')
     }
   }
 

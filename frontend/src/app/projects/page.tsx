@@ -25,6 +25,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api-client'
+import { showNotification } from '@/lib/notifications'
 import { cn } from '@/lib/utils'
 
 interface ProjectItem {
@@ -99,7 +100,7 @@ function ProjectsHubContent() {
       })
       router.push(`/projects/${newProject.id}`)
     } catch (err: any) {
-      alert(err.message || 'Failed to import project')
+      showNotification(err.message || 'Failed to import project', 'error')
       setImportingTitle(null)
     }
   }
@@ -113,7 +114,7 @@ function ProjectsHubContent() {
       await api.delete(`/api/v1/launchpad/projects/${projectId}`)
       setProjects((prev) => prev.filter((p) => p.id !== projectId))
     } catch (err: any) {
-      alert(err.message || 'Failed to delete project')
+      showNotification(err.message || 'Failed to delete project', 'error')
     }
   }
 

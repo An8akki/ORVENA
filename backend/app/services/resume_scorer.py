@@ -9,6 +9,7 @@ import re
 from typing import Dict, Any, List, Tuple
 from datetime import datetime
 import asyncio
+import json
 
 
 class ResumeScorer:
@@ -273,25 +274,32 @@ class ResumeScorer:
         return min(score, 100.0)
     
     def _score_keywords(self, resume_text: str) -> float:
-        """Score industry keyword optimization."""
-        text_lower = resume_text.lower()
-        score = 0.0
-        
-        keyword_matches = 0
-        total_keywords = 0
-        
+        """Score keyword coverage without penalizing a role for unrelated terms."""
+        from app.services.career_signals import extract_skill_evidence
+
+        evidence = set(extract_skill_evidence(resume_text))
+        text_lower = re.sub(r"\s+", " ", resume_text.lower())
+        category_scores = []
+        aliases = {
+            "programming": {"programming", "python", "java", "javascript", "typescript"},
+            "web": {"html", "css", "react", "backend", "javascript"},
+            "database": {"database", "sql"},
+            "cloud": {"cloud", "docker", "kubernetes", "aws", "azure"},
+            "data": {"data analysis", "machine learning", "python", "pytorch"},
+            "soft_skills": {"leadership", "communication", "teamwork", "critical thinking"},
+        }
         for category, keywords in self.TECH_KEYWORDS.items():
-            total_keywords += len(keywords)
-            for keyword in keywords:
-                if keyword in text_lower:
-                    keyword_matches += 1
-        
-        # Calculate percentage of keywords present
-        if total_keywords > 0:
-            keyword_coverage = (keyword_matches / total_keywords) * 100
-            score = min(keyword_coverage * 2, 100.0)  # Scale up
-        
-        return score
+            matched = sum(
+                1 for keyword in keywords
+                if keyword in evidence
+                or keyword in aliases.get(category, set())
+                and re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", text_lower)
+            )
+            # ATS systems look for representative evidence, not every
+            # technology in a global dictionary. Cap the denominator so a
+            # resume is not penalized for omitting unrelated tools.
+            category_scores.append(min(matched / min(len(keywords), 5) * 100, 100))
+        return round(sum(category_scores) / max(len(category_scores), 1), 1)
     
     def _generate_suggestions(self, scores: Dict[str, float], data: Dict[str, Any]) -> List[str]:
         """Generate actionable suggestions based on scores."""
@@ -383,13 +391,7 @@ class ResumeScorer:
             "Data Engineer": ["python", "database", "data pipeline", "cloud", "automation", "testing", "linux"],
             "Cybersecurity Analyst": ["networking", "security", "incident response", "linux", "python", "communication", "critical thinking"],
         }
-        evidence = (resume_text or "").lower()
-        evidence += " " + " ".join(
-            str(skill).lower()
-            for group in (data.get("skills") or {}).values()
-            if isinstance(group, list)
-            for skill in group
-        )
+        evidence = (resume_text or "").lower() + " " + json.dumps(data).lower()
         from app.services.career_signals import extract_skill_evidence
         evidenced_skills = {skill.lower() for skill in extract_skill_evidence(evidence)}
         results = []

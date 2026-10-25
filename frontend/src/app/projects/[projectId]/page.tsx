@@ -29,6 +29,7 @@ import { AppLayout } from '@/components/layout/AppLayout'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api-client'
+import { showNotification } from '@/lib/notifications'
 import { cn } from '@/lib/utils'
 
 interface Milestone {
@@ -208,7 +209,7 @@ function ProjectWorkspaceContent() {
       setShowcasePublic(data.showcase_public || false)
       setShowcaseSlug(data.showcase_slug || '')
     } catch (err: any) {
-      alert(err.message || 'Failed to load project')
+      showNotification(err.message || 'Failed to load project', 'error')
       router.push('/projects')
     } finally {
       setLoading(false)
@@ -224,7 +225,7 @@ function ProjectWorkspaceContent() {
       })
       await loadProject()
     } catch (err: any) {
-      alert(err.message || 'Failed to update milestone')
+      showNotification(err.message || 'Failed to update milestone', 'error')
     }
   }
 
@@ -242,7 +243,7 @@ function ProjectWorkspaceContent() {
       setShowAddMilestone(false)
       await loadProject()
     } catch (err: any) {
-      alert(err.message || 'Failed to add milestone')
+      showNotification(err.message || 'Failed to add milestone', 'error')
     }
   }
 
@@ -252,7 +253,7 @@ function ProjectWorkspaceContent() {
       await api.delete(`/api/v1/launchpad/projects/${projectId}/milestones/${mId}`)
       await loadProject()
     } catch (err: any) {
-      alert(err.message || 'Failed to delete milestone')
+      showNotification(err.message || 'Failed to delete milestone', 'error')
     }
   }
 
@@ -275,7 +276,7 @@ function ProjectWorkspaceContent() {
       )
       setEvalResult(res)
     } catch (err: any) {
-      alert(err.message || 'Evaluation failed')
+      showNotification(err.message || 'Evaluation failed', 'error')
     } finally {
       setEvaluating(false)
     }
@@ -292,7 +293,7 @@ function ProjectWorkspaceContent() {
       setPathways(res.pathways || [])
       setOutcomeSummary(res.readiness_summary || '')
     } catch (err: any) {
-      alert(err.message || 'Outcome intelligence analysis failed')
+      showNotification(err.message || 'Outcome intelligence analysis failed', 'error')
     } finally {
       setAnalyzingOutcomes(false)
     }
@@ -308,9 +309,9 @@ function ProjectWorkspaceContent() {
       })
       await loadProject()
       setActiveTab('milestones')
-      alert('Pathway milestones successfully added to your project!')
+      showNotification('Pathway milestones successfully added to your project!', 'success')
     } catch (err: any) {
-      alert(err.message || 'Failed to apply pathway milestones')
+      showNotification(err.message || 'Failed to apply pathway milestones', 'error')
     } finally {
       setApplyingPathway(null)
     }
@@ -324,9 +325,9 @@ function ProjectWorkspaceContent() {
         headline: showcaseHeadline || project?.title,
       })
       await loadProject()
-      alert('Showcase settings saved!')
+      showNotification('Showcase settings saved!', 'success')
     } catch (err: any) {
-      alert(err.message || 'Failed to save showcase')
+      showNotification(err.message || 'Failed to save showcase', 'error')
     }
   }
 
